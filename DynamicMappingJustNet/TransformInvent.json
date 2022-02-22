@@ -1,0 +1,12 @@
+{
+  "sourceItems": {
+    [
+      {
+        "sku": "#valueof($.ItemId)",
+        "source_code": "#valueof($.Locations[0].Warehouse)",
+        "quantity": "#valueof($.Locations[0].Quantity)",
+        "status": 1
+      }
+    ]
+  }
+}

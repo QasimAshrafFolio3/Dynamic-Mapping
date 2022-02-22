@@ -1,0 +1,224 @@
+﻿@model IEnumerable<DynamicMappingCore.Models.JsonMapModel>
+
+@{
+    ViewData["Title"] = "MapJson";
+}
+
+<h1>MapJson</h1>
+
+<input type="button" id="btnAdd" value="Add" class="btn btn-info" />
+@*<input type="button" id="btnAddComponent" value="Add Component" class="btn btn-info" />*@
+<input type="button" id="btnSaveJustNet" value="Save Just.Net" class="btn btn-primary" style="display:none" />
+<input type="button" id="btnSaveJsonAta" value="Save & Convert [JsonAta]" class="btn btn-primary" />
+<input type="button" id="btnSaveCustom" value="Save & Convert [Custom]" class="btn btn-primary" />
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="table-responsive">
+            <table class="table" id="mapTable">
+                <thead>
+                <th>IsComponent</th>
+                <th>Destination</th>
+                <th>Source</th>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+<script src="~/lib/select2.min.js"></script>
+<script>
+    var rowNumber = 0;
+    $(function() {
+
+        // Add Row Function
+        $("#btnAdd").click(function() {
+            rowNumber++;
+            var row = '<tr>' +
+                '<td class="col-1" ><input type="checkbox" name="isComponent' + rowNumber + '" value=""></td>' +
+                '<td class="col-5"><select class="form-control" id="target' + rowNumber + '" ></select></td>' +
+                '<td class="col-5"><select class="form-control" id="source' + rowNumber + '" multiple="multiple" ></select></td>' +
+                '</tr>';
+            $("#mapTable").append(row);
+
+            var targetKVP = @Json.Serialize(Model.LastOrDefault().FieldsAndType);
+
+            var target = $("#target" + rowNumber).select2({
+                tags: true,
+                tokenSeparators: [',', ' '],
+                width: 'resolve' // need to override the changed default
+            });
+
+            for (let temp in targetKVP) {
+                target.append('<option value=' + targetKVP[temp].field +' :: '+ targetKVP[temp].type + '>' + targetKVP[temp].field +' :: '+ targetKVP[temp].type + '</option>');
+            }
+
+            //Source binding
+            var sourceKVP = @Json.Serialize(Model.FirstOrDefault().FieldsAndType);
+
+            var source = $("#source" + rowNumber).select2({
+                tags: true,
+
+                tokenSeparators: [',', ' '],
+                width: 'resolve' // need to override the changed default
+            });
+
+            for (let temp in sourceKVP) {
+                source.append('<option value=' + sourceKVP[temp].field +' :: '+ sourceKVP[temp].type  + '>' + sourceKVP[temp].field +' :: '+ sourceKVP[temp].type  + '</option>');
+            }
+        });
+
+
+        // Add Row Function
+        $("#btnAddComponent").click(function() {
+            rowNumber++;
+            var row = '<tr>' +
+            '<td class="col-1" ><input type="checkbox" name="isComponent' + rowNumber + '" value="" checked></td>' +
+            '<td class="col-5" ><select class="form-control" id="component' + rowNumber + '" ></select></td>' +
+            '<td class="col-5"><select class="form-control" id="source' + rowNumber + '" ></select></td>' +
+            '</tr>';
+            $("#mapTable").append(row);
+
+            //Component Binding
+            var componentArray= ["loopstart","loopend"];
+
+            var target = $("#component" + rowNumber).select2({
+                tags: true,
+                tokenSeparators: [',', ' '],
+                width: 'resolve' // need to override the changed default
+            });
+
+            for (let temp in componentArray) {
+                target.append('<option value=' + componentArray[temp] + '>' + componentArray[temp] + '</option>');
+            }
+
+             //Source binding
+            var sourceKVP = @Json.Serialize(Model.FirstOrDefault().FieldsAndType);
+
+            var source = $("#source" + rowNumber).select2({
+                tags: true,
+
+                tokenSeparators: [',', ' '],
+                width: 'resolve' // need to override the changed default
+            });
+
+            for (let temp in sourceKVP) {
+                source.append('<option value=' + sourceKVP[temp].field +' :: '+ sourceKVP[temp].type  + '>' + sourceKVP[temp].field +' :: '+ sourceKVP[temp].type  + '</option>');
+            }
+        });
+
+        $("#btnSaveJsonAta").click(function() {
+
+            var mapTable = {};
+            var mapRowNumber = 1;
+            $('#mapTable tr').each(function(){
+                $(this).find('td').each(function(){
+                    var sourceDropDown = $("#source"+ mapRowNumber+" :selected");
+                    var targetDropDown = $("#target"+ mapRowNumber);
+
+                    if (!targetDropDown.val())
+                       targetDropDown  = $("#component"+ mapRowNumber);
+
+                    var commaSeperatedValues = "";
+                    if (this && sourceDropDown != null && sourceDropDown.length > 0){
+                        for (let i = 0; i < sourceDropDown.length; i++) {
+                            commaSeperatedValues += sourceDropDown[i].innerText.split("::")[0] + " &";
+                        }
+                        // remove last &
+                        commaSeperatedValues = commaSeperatedValues.substring(0,commaSeperatedValues.length-1);
+
+                        mapTable[targetDropDown.val()] = commaSeperatedValues;
+                        mapRowNumber++;
+                    }
+                });
+            });
+
+            //clean
+            delete mapTable[undefined]
+
+            //Post
+            $.post('/Home/SaveMappingJsonAta', {keyValuePairs : mapTable })
+            .done(function(response, status, jqxhr){
+                window.location.href ='https://localhost:44325/Home/ResultJson';
+            })
+            .fail(function(jqxhr, status, error){
+                console.log(error);
+            })
+                console.log(mapTable);
+        });
+
+
+        $("#btnSaveJustNet").click(function() {
+            var mapTable = {};
+            var mapRowNumber = 1;
+            $('#mapTable tr').each(function(){
+                $(this).find('td').each(function(){
+                    if (this){
+                        mapTable[$("#target"+ mapRowNumber).val()] = "#valueof($."+$("#source"+ mapRowNumber+" :selected").val()+")";
+                        mapRowNumber++;
+                    }
+                });
+            });
+
+            //clean
+            delete mapTable[undefined]
+
+            //Post
+            $.post('/Home/SaveMappingJustNet', {keyValuePairs : mapTable })
+            .done(function(response, status, jqxhr){
+                window.location.href ='https://localhost:44325/Home/ResultJson';
+            })
+            .fail(function(jqxhr, status, error){
+            console.log(error);
+            })
+            console.log(mapTable);
+        });
+
+        $("#btnSaveCustom").click(function() {
+            var mapTable = {};
+            var mapRowNumber = 1;
+            $('#mapTable tr').each(function(){
+                $(this).find('td').each(function(){
+                    if (this){
+                         var sourceDropDown = $("#source"+ mapRowNumber+" :selected");
+                         var targetDropDown = $("#target"+ mapRowNumber);
+
+                        if (!targetDropDown.val())
+                            targetDropDown  = $("#component"+ mapRowNumber);
+
+                        var commaSeperatedValues = "";
+                        if (this && sourceDropDown != null && sourceDropDown.length > 0){
+                            for (let i = 0; i < sourceDropDown.length; i++) {
+                                commaSeperatedValues += sourceDropDown[i].innerText.split("::")[0] + " &";
+                            }
+                            // remove last &
+                            commaSeperatedValues = commaSeperatedValues.substring(0,commaSeperatedValues.length-1);
+
+                            mapTable[targetDropDown.val()] = commaSeperatedValues;
+                            mapRowNumber++;
+                        }
+                    }
+                });
+            });
+
+            //clean
+            delete mapTable[undefined]
+
+            //Post
+            $.post('/Home/SaveMappingCustom', {keyValuePairs : mapTable })
+            .done(function(response, status, jqxhr){
+                window.location.href ='https://localhost:44325/Home/ResultJson';
+            })
+            .fail(function(jqxhr, status, error){
+                 console.log(error);
+            })
+            console.log(mapTable);
+        });
+    });
+
+</script>
+}

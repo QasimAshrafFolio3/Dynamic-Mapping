@@ -1,0 +1,19 @@
+{
+  "productMigrationDocument": {
+    "createdDateTime": "",
+    "ecommProductId": "",
+    "itemId": "",
+    "productType": "",
+    "variants": [
+      {
+        "barCode": "",
+        "createdDateTime": "",
+        "ecommVariantId": "",
+        "variantColor": "",
+        "variantConfigId": "",
+        "variantSize": "",
+        "variantStyle": ""
+      }
+    ]
+  }
+}

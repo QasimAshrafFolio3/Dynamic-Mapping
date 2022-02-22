@@ -1,0 +1,71 @@
+﻿@model DynamicMappingCore.Models.JsonModel
+
+@{
+    ViewData["Title"] = "AddJson";
+}
+
+<h1>AddJson</h1>
+
+<h4>JsonModel</h4>
+<hr />
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="SaveJson">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="row">
+                <div class="col-md-1">
+                    <label asp-for="URL" class="control-label"></label>
+                </div>
+                <div class="col-md-9">
+                    <div class="form-group">
+                        <input asp-for="URL" class="form-control" />
+                        <span asp-validation-for="URL" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <input type="button" id="btnFetch" value="Fetch" class="btn btn-primary" />
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-1">
+                    <label asp-for="Json" class="control-label"></label>
+                </div>
+                <div class="col-md-11">
+                    <div class="form-group">
+                        <input asp-for="Json" class="form-control" readonly />
+                        <span asp-validation-for="Json" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+<script>
+       $(function() {
+
+        $("#btnFetch").click(function() {
+            console.log($("#URL").val());
+            FetchShowJson($("#URL").val());
+        });
+
+        function FetchShowJson(url) {
+            $.getJSON(url, function(data) {
+               console.log(JSON.stringify(data));
+               $("#Json").val(JSON.stringify(data));
+            });
+        }
+    });
+</script>
+}

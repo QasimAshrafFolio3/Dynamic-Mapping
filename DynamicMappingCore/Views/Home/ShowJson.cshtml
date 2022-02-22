@@ -1,0 +1,48 @@
+﻿@model IEnumerable<DynamicMappingCore.Models.JsonModel>
+
+@{
+    ViewData["Title"] = "Json Sources";
+}
+
+<h1>ShowJson</h1>
+
+<p>
+    <a asp-action="AddJson" class="btn btn-primary">Create New</a>
+    <a asp-action="MapJson" class="btn btn-primary">Map Json</a>
+@*    <a asp-action="MapJsonCustom" class="btn btn-primary">Map Custom</a>*@
+</p>
+<div class="table-responsive">
+
+    <table class="table ">
+        <thead>
+            <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.URL)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Json)
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+
+            @foreach (var item in Model.ToList())
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.URL)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Json)
+                    </td>
+                    @* <td>
+                        @Html.ActionLink("Edit", "Edit", new { /* id=item.PrimaryKey */ }) |
+                        @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) |
+                        @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ })
+                        </td>*@
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

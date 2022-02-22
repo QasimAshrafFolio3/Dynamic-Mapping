@@ -1,0 +1,19 @@
+{
+  "productMigrationDocument": {
+    "#loop($.products,pro)": {
+      "createdDateTime": "#currentvalueatpath($.created_at)",
+      "ecommProductId": "#currentvalueatpath($.id)",
+      "itemId": "#valueof($.products[0].variants[0].sku)",
+      "productType": "#ifcondition(#valueof($.products[0].variants[0].option1),Default Title,Simple,Master)",
+      "variants": {
+        "#loop($.variants,vari)": {
+          "createdDateTime": "#currentvalueatpath($.created_at)",
+          "ecommVariantId": "#currentvalueatpath($.id)",
+          "variantColor": "#customfunction(DynamicMapping,DynamicMapping.CustomFunction.VariantValue,#currentvalueatpath($,pro),#currentvalueatpath($,vari))"
+          //"variantSize": "#ifcondition(#valueof($.option[0].name),Size,$.option2,null)",
+          //"variantStyle": "#ifcondition(#valueof($.option[0].name),Style,$.option3,null)"
+        }
+      }
+    }
+  }
+}

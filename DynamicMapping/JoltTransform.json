@@ -1,0 +1,43 @@
+[
+  {
+    "operation": "shift",
+    "spec": {
+      "products": {
+        //Product Loop
+        "*": {
+          "created_at": "productMigrationDocument[&1].createdDateTime",
+          "id": "productMigrationDocument[&1].id",
+          //Variant Loop
+          "variants": {
+            "*": {
+              "sku": "productMigrationDocument[&3].itemId",
+              //If Else
+              "option1": {
+                "Default Title": {
+                  "#Simple": "productMigrationDocument[&5].productType"
+                },
+                "*": {
+                  "#Master": "productMigrationDocument[&5].productType"
+                }
+              },
+              "id": "productMigrationDocument[&3].variants.[&1].ecommVariantId",
+              "created_at": "productMigrationDocument[&3].variants.[&1].createdDateTime"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  //Convert List to Single Element.
+  {
+    "operation": "modify-overwrite-beta",
+    "spec": {
+      "productMigrationDocument": {
+        "*": {
+          "productType": "=firstElement(@(1,productType))"
+        }
+      }
+    }
+  }
+]
