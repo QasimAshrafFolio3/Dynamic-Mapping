@@ -18,7 +18,9 @@ namespace DynamicMappingCore.Controllers
     {
         private readonly ILogger<HomeController> _logger;
 
-        public static Dictionary<string, string> InMemDb = new Dictionary<string, string>();
+        public static Dictionary<string, JsonModel> InMemJsonModeDb = new Dictionary<string, JsonModel>();
+        public static Dictionary<string, List<JsonMetaData>> InMemJsonMetaDataDb = new Dictionary<string, List<JsonMetaData>>();
+
         public static string result;
         public HomeController(ILogger<HomeController> logger)
         {
@@ -28,6 +30,12 @@ namespace DynamicMappingCore.Controllers
         public IActionResult Index()
         {
             return View();
+        }
+
+        [HttpGet]
+        public JsonResult GetJsonMetaData()
+        {
+            return Json(InMemJsonMetaDataDb.Where(x => !string.IsNullOrWhiteSpace(x.Key)).Select(x=>x.Value));
         }
 
         public IActionResult Privacy()
@@ -49,16 +57,17 @@ namespace DynamicMappingCore.Controllers
         [HttpPost]
         public IActionResult SaveJson(JsonModel jsonModel)
         {
-            InMemDb.TryAdd(jsonModel.URL, jsonModel.Json);
+            InMemJsonModeDb.TryAdd(jsonModel.URL, jsonModel);
             return RedirectToAction("ShowJson");
         }
 
         public IActionResult ShowJson()
         {
             List<JsonModel> jsonModelList = new List<JsonModel>();
-            foreach (var item in InMemDb)
+            foreach (var item in InMemJsonModeDb)
             {
-                jsonModelList.Add(new JsonModel { URL = item.Key, Json = item.Value });
+                var jsonModel = item.Value;
+                jsonModelList.Add(new JsonModel { URL = item.Key, ConnectionType = jsonModel.ConnectionType, Json = jsonModel.Json });
             }
             return View(jsonModelList);
         }
@@ -68,7 +77,7 @@ namespace DynamicMappingCore.Controllers
             List<JsonMapModel> jsonMapModelList = new List<JsonMapModel>();
 
             //Fetch all json from 
-            foreach (var item in InMemDb)
+            foreach (var item in InMemJsonModeDb)
             {
                 JsonMapModel tempJsonMapModel = new JsonMapModel();
 
@@ -76,7 +85,9 @@ namespace DynamicMappingCore.Controllers
                 tempJsonMapModel.Title = item.Key.Substring(item.Key.LastIndexOf('/') + 1);
                 List<FieldsAndType> fieldsAndTypesList = new List<FieldsAndType>();
                 // Parse json and extract Info
-                JObject jObj = JObject.Parse(IsArray(item.Value) ? JArray.Parse(item.Value).FirstOrDefault().ToString() : item.Value);
+
+                var jsonModel = item.Value;
+                JObject jObj = JObject.Parse(IsArray(jsonModel.Json) ? JArray.Parse(jsonModel.Json).FirstOrDefault().ToString() : jsonModel.Json);
                 IDictionary<string, object> keyValuePairs = jObj.Flatten();
 
                 foreach (var fields in keyValuePairs)
@@ -107,7 +118,7 @@ namespace DynamicMappingCore.Controllers
             List<JsonMapModel> jsonMapModelList = new List<JsonMapModel>();
 
             //Fetch all json from 
-            foreach (var item in InMemDb)
+            foreach (var item in InMemJsonModeDb)
             {
                 JsonMapModel tempJsonMapModel = new JsonMapModel();
 
@@ -115,7 +126,9 @@ namespace DynamicMappingCore.Controllers
                 tempJsonMapModel.Title = item.Key.Substring(item.Key.LastIndexOf('/') + 1);
                 List<FieldsAndType> fieldsAndTypesList = new List<FieldsAndType>();
                 // Parse json and extract Info
-                JObject jObj = JObject.Parse(IsArray(item.Value) ? JArray.Parse(item.Value).FirstOrDefault().ToString() : item.Value);
+                var jsonModel = item.Value;
+                tempJsonMapModel.ConnectionType = jsonModel.ConnectionType;
+                JObject jObj = JObject.Parse(IsArray(jsonModel.Json) ? JArray.Parse(jsonModel.Json).FirstOrDefault().ToString() : jsonModel.Json);
                 var jsonCustomFormatter = new ComAxJsonFlattener().CollectFields(JToken.Parse(jObj.ToString()));
 
                 foreach (var fields in jsonCustomFormatter)
@@ -128,7 +141,7 @@ namespace DynamicMappingCore.Controllers
                         fieldsAndTypesList.Add(new FieldsAndType()
                         {
                             Field = cleanFieldName,
-                            Type = fields.Type != null ? fields.Type.GetType().Name : typeof(string).Name
+                            Type = fields.Type != "Null" ? fields.Type : typeof(string).Name
                         });
                     }
 
@@ -176,7 +189,7 @@ namespace DynamicMappingCore.Controllers
                 dictObjectList.TryAdd(tempkvp.Key, (object)tempkvp.Value);
             }
 
-            var source = InMemDb.FirstOrDefault().Value;
+            var source = InMemJsonModeDb.Where(x => x.Value.ConnectionType == ConnectionType.source).FirstOrDefault().Value;
             result = "";
 
             //Unflatten
@@ -186,16 +199,16 @@ namespace DynamicMappingCore.Controllers
             if (jObject != null)
             {
                 // JUST.net
-                if (IsArray(source))
+                if (IsArray(source.Json))
                 {
-                    foreach (var children in JArray.Parse(source).Children())
+                    foreach (var children in JArray.Parse(source.Json).Children())
                     {
                         result += new JsonTransformer().Transform(jObject.ToString(), children.ToString());
                     }
                 }
                 else
                 {
-                    result += new JsonTransformer().Transform(jObject.ToString(), source);
+                    result += new JsonTransformer().Transform(jObject.ToString(), source.Json);
                 }
             }
 
@@ -208,7 +221,7 @@ namespace DynamicMappingCore.Controllers
         {
             // Convert string values to object values to Unflatten.
             Dictionary<string, object> dictObjectList = keyValuePairs.ToDictionary(k => k.Key, k => (object)k.Value.ToString());
-            var source = InMemDb.FirstOrDefault().Value;
+            var source = InMemJsonModeDb.Where(x => x.Value.ConnectionType == ConnectionType.source).FirstOrDefault().Value;
             result = "";
 
             //Unflatten
@@ -223,9 +236,9 @@ namespace DynamicMappingCore.Controllers
 
                 System.IO.File.WriteAllText(@"D:\\Result.jsonata", preProcessJson);
 
-                if (IsArray(source))
+                if (IsArray(source.Json))
                 {
-                    foreach (var children in JArray.Parse(source).Children())
+                    foreach (var children in JArray.Parse(source.Json).Children())
                     {
                         JsonataQuery jsonataQuery = new JsonataQuery(preProcessJson);
                         result += jsonataQuery.Eval(children.ToString());
@@ -235,7 +248,7 @@ namespace DynamicMappingCore.Controllers
                 {
                     // Json ata.
                     JsonataQuery jsonataQuery = new JsonataQuery(preProcessJson);
-                    JToken data = JToken.Parse(source);
+                    JToken data = JToken.Parse(source.Json);
                     result = jsonataQuery.Eval(data.ToString());
                 }
             }
@@ -243,21 +256,30 @@ namespace DynamicMappingCore.Controllers
             return RedirectToAction("ResultJson");
         }
 
+        [HttpPost]
+        public IActionResult SaveMappingJsonAtaWithQuery(List<JsonMetaData> JsonMetaDataList, string jsonataQuery)
+        {
+            InMemJsonMetaDataDb.Clear();
+            InMemJsonMetaDataDb.Add(jsonataQuery.Trim(), JsonMetaDataList);
+            return RedirectToAction("ResultJson");
+        }
+
+
         // Custom Mapper
         [HttpPost]
         public IActionResult SaveMappingCustom(Dictionary<string, string> keyValuePairs)
         {
-            var source = InMemDb.FirstOrDefault().Value;
+            var source = InMemJsonModeDb.Where(x => x.Value.ConnectionType == ConnectionType.source).FirstOrDefault().Value;
             result = "";
 
-            if (IsArray(source))
+            if (IsArray(source.Json))
             {
-                foreach (var children in JArray.Parse(source).Children())
+                foreach (var children in JArray.Parse(source.Json).Children())
                     ProcessNode(keyValuePairs, children.ToString());
             }
             else
             {
-                ProcessNode(keyValuePairs, source);
+                ProcessNode(keyValuePairs, source.Json);
             }
 
             return RedirectToAction("ResultJson");
@@ -299,7 +321,7 @@ namespace DynamicMappingCore.Controllers
                 else if (x.Value.Type == JTokenType.Object)
                     tempJson += string.Format("\"{0}\":{1},", x.Key, CreateTransformation(JObject.Parse(x.Value.ToString())));
                 else
-                    tempJson += string.Format("\"{0}\":{1},", x.Key, x.Value.ToString().Replace("\"", "").Replace("::","\""));
+                    tempJson += string.Format("\"{0}\":{1},", x.Key, x.Value.ToString().Replace("\"", "").Replace("::", "\""));
             }
             return "{" + tempJson + "}";
         }

@@ -6,9 +6,7 @@
 
 <h1>Map Json Custom</h1>
 
-<input type="button" id="btnAdd" value="Add" class="btn btn-info" />
-@*<input type="button" id="btnAddComponent" value="Add Component" class="btn btn-info" />*@
-<input type="button" id="btnSaveJustNet" value="Save Just.Net" class="btn btn-primary" style="display:none" />
+<input type="button" id="btnAdd" value="Add" class="btn btn-primary" onclick="addRow()" />
 <input type="button" id="btnSaveJsonAta" value="Save & Convert [JsonAta]" class="btn btn-primary" />
 <input type="button" id="btnSaveCustom" value="Save & Convert [Custom]" class="btn btn-primary" />
 
@@ -17,9 +15,12 @@
         <div class="table-responsive">
             <table class="table" id="mapTable">
                 <thead>
-                <th>IsComponent</th>
-                <th>Destination</th>
-                <th>Source</th>
+                    <tr>
+                        <th>Component Type</th>
+                        <th>Destination</th>
+                        <th>Source</th>
+                        <th>Action</th>
+                    </tr>
                 </thead>
                 <tbody>
                 </tbody>
@@ -28,197 +29,217 @@
     </div>
 </div>
 
+<p>Json ata Query</p>
+<div class="row" style="background-color:lightgray">
+    <p id="jsonataResult"></p>
+</div>
+
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 <script src="~/lib/select2.min.js"></script>
+<script src="~/lib/jsonata.min.js"></script>
 <script>
-    var rowNumber = 0;
+           var rowNumber = 0;
+    var componentsList = ["Select Component", "simple", "pre-defined", "concatenate", "custom-field"]
     $(function() {
 
-        // Add Row Function
-        $("#btnAdd").click(function() {
-            rowNumber++;
-            var row = '<tr>' +
-                '<td class="col-1" ><input type="checkbox" name="isComponent' + rowNumber + '" value=""></td>' +
-                '<td class="col-5"><select class="form-control" id="target' + rowNumber + '" ></select></td>' +
-                '<td class="col-5"><select class="form-control" id="source' + rowNumber + '" multiple="multiple" ></select></td>' +
-                '</tr>';
-            $("#mapTable").append(row);
-
-            var targetKVP = @Json.Serialize(Model.LastOrDefault().FieldsAndType);
-
-            var target = $("#target" + rowNumber).select2({
-                tags: true,
-                tokenSeparators: [',', ' '],
-                width: 'resolve' // need to override the changed default
-            });
-
-            for (let temp in targetKVP) {
-                target.append('<option value=' + targetKVP[temp].field +' :: '+ targetKVP[temp].type + '>' + targetKVP[temp].field +' :: '+ targetKVP[temp].type + '</option>');
-            }
-
-            //Source binding
-            var sourceKVP = @Json.Serialize(Model.FirstOrDefault().FieldsAndType);
-
-            var source = $("#source" + rowNumber).select2({
-                tags: true,
-
-                tokenSeparators: [',', ' '],
-                width: 'resolve' // need to override the changed default
-            });
-
-            for (let temp in sourceKVP) {
-                source.append('<option value=' + sourceKVP[temp].field +' :: '+ sourceKVP[temp].type  + '>' + sourceKVP[temp].field +' :: '+ sourceKVP[temp].type  + '</option>');
-            }
-        });
-
-
-        // Add Row Function
-        $("#btnAddComponent").click(function() {
-            rowNumber++;
-            var row = '<tr>' +
-            '<td class="col-1" ><input type="checkbox" name="isComponent' + rowNumber + '" value="" checked></td>' +
-            '<td class="col-5" ><select class="form-control" id="component' + rowNumber + '" ></select></td>' +
-            '<td class="col-5"><select class="form-control" id="source' + rowNumber + '" ></select></td>' +
-            '</tr>';
-            $("#mapTable").append(row);
-
-            //Component Binding
-            var componentArray= ["loopstart","loopend"];
-
-            var target = $("#component" + rowNumber).select2({
-                tags: true,
-                tokenSeparators: [',', ' '],
-                width: 'resolve' // need to override the changed default
-            });
-
-            for (let temp in componentArray) {
-                target.append('<option value=' + componentArray[temp] + '>' + componentArray[temp] + '</option>');
-            }
-
-             //Source binding
-            var sourceKVP = @Json.Serialize(Model.FirstOrDefault().FieldsAndType);
-
-            var source = $("#source" + rowNumber).select2({
-                tags: true,
-
-                tokenSeparators: [',', ' '],
-                width: 'resolve' // need to override the changed default
-            });
-
-            for (let temp in sourceKVP) {
-                source.append('<option value=' + sourceKVP[temp].field +' :: '+ sourceKVP[temp].type  + '>' + sourceKVP[temp].field +' :: '+ sourceKVP[temp].type  + '</option>');
-            }
-        });
+        renderUI();
 
         $("#btnSaveJsonAta").click(function() {
-
-            var mapTable = {};
-            var mapRowNumber = 1;
-            $('#mapTable tr').each(function(){
-                $(this).find('td').each(function(){
-                    var sourceDropDown = $("#source"+ mapRowNumber+" :selected");
-                    var targetDropDown = $("#target"+ mapRowNumber);
-
-                    if (!targetDropDown.val())
-                       targetDropDown  = $("#component"+ mapRowNumber);
-
-                    var commaSeperatedValues = "";
-                    if (this && sourceDropDown != null && sourceDropDown.length > 0){
-                        for (let i = 0; i < sourceDropDown.length; i++) {
-                            commaSeperatedValues += sourceDropDown[i].innerText.split("::")[0] + " &";
-                        }
-                        // remove last &
-                        commaSeperatedValues = commaSeperatedValues.substring(0,commaSeperatedValues.length-1);
-
-                        mapTable[targetDropDown.val()] = commaSeperatedValues;
-                        mapRowNumber++;
-                    }
-                });
-            });
-
-            //clean
-            delete mapTable[undefined]
-
             //Post
-            $.post('/Home/SaveMappingJsonAta', {keyValuePairs : mapTable })
-            .done(function(response, status, jqxhr){
-                window.location.href ='https://localhost:44325/Home/ResultJson';
-            })
-            .fail(function(jqxhr, status, error){
-                console.log(error);
-            })
-                console.log(mapTable);
-        });
-
-
-        $("#btnSaveJustNet").click(function() {
-            var mapTable = {};
-            var mapRowNumber = 1;
-            $('#mapTable tr').each(function(){
-                $(this).find('td').each(function(){
-                    if (this){
-                        mapTable[$("#target"+ mapRowNumber).val()] = "#valueof($."+$("#source"+ mapRowNumber+" :selected").val()+")";
-                        mapRowNumber++;
-                    }
-                });
-            });
-
-            //clean
-            delete mapTable[undefined]
-
-            //Post
-            $.post('/Home/SaveMappingJustNet', {keyValuePairs : mapTable })
-            .done(function(response, status, jqxhr){
-                window.location.href ='https://localhost:44325/Home/ResultJson';
-            })
-            .fail(function(jqxhr, status, error){
-            console.log(error);
-            })
+            $.post('/Home/SaveMappingJsonAtaWithQuery', {
+                    jsonMetaDataList: jsonMetaDataList,
+                    jsonataQuery: "{" + jsonataQuery + "}"
+                })
+                .done(function(response, status, jqxhr) {
+                    window.location.href = 'https://localhost:44325/Home/ResultJson';
+                })
+                .fail(function(jqxhr, status, error) {
+                    console.log(error);
+                })
             console.log(mapTable);
         });
 
         $("#btnSaveCustom").click(function() {
-            var mapTable = {};
-            var mapRowNumber = 1;
-            $('#mapTable tr').each(function(){
-                $(this).find('td').each(function(){
-                    if (this){
-                         var sourceDropDown = $("#source"+ mapRowNumber+" :selected");
-                         var targetDropDown = $("#target"+ mapRowNumber);
-
-                        if (!targetDropDown.val())
-                            targetDropDown  = $("#component"+ mapRowNumber);
-
-                        var commaSeperatedValues = "";
-                        if (this && sourceDropDown != null && sourceDropDown.length > 0){
-                            for (let i = 0; i < sourceDropDown.length; i++) {
-                                commaSeperatedValues += sourceDropDown[i].innerText.split("::")[0] + " &";
-                            }
-                            // remove last &
-                            commaSeperatedValues = commaSeperatedValues.substring(0,commaSeperatedValues.length-1);
-
-                            mapTable[targetDropDown.val()] = commaSeperatedValues;
-                            mapRowNumber++;
-                        }
-                    }
-                });
-            });
-
-            //clean
-            delete mapTable[undefined]
-
             //Post
-            $.post('/Home/SaveMappingCustom', {keyValuePairs : mapTable })
-            .done(function(response, status, jqxhr){
-                window.location.href ='https://localhost:44325/Home/ResultJson';
-            })
-            .fail(function(jqxhr, status, error){
-                 console.log(error);
-            })
-            console.log(mapTable);
+            $.post('/Home/SaveMappingCustom', {
+                    jsonMetaDataList: mapTable,
+                })
+                .done(function(response, status, jqxhr) {
+                    window.location.href = 'https://localhost:44325/Home/ResultJson';
+                })
+                .fail(function(jqxhr, status, error) {
+                    console.log(error);
+                });
         });
     });
 
+
+    function renderUI() {
+
+        $.get('/Home/GetJsonMetaData')
+            .done(function(response, status, jqxhr) {
+                response[0].forEach(function(element, index) {
+                    let row = addRow();
+                    $('#component' + row).val(element.componentType);
+                    if(element.componentType == "custom-field")
+                    {
+                        $('#target' + row).append('<option value=' + element.target + ' selected >' + element.target + '</option>');
+                        $('#source' + row).append('<option value=' + element.source + ' selected >' + element.source + '</option>');
+                    }
+                    else if (element.componentType == "pre-defined")
+                    {
+
+                        $('#target' + row).val(element.target);
+                        $('#source' + row).append('<option value=' + element.source + ' selected >' + element.source + '</option>');
+                    }
+                    else if (element.componentType == "concatenate")
+                    {
+                        $('#target' + row).val(element.target);
+                        $('#source' + row).val(GenerateConcatenateDropDownValue(element.source));
+                    }
+                    else
+                    {
+                        $('#target' + row).val(element.target);
+                        $('#source' + row).val(element.source);
+                    }
+
+                });
+            })
+            .fail(function(jqxhr, status, error) {
+                console.log(error);
+            });
+    }
+
+    function addRow() {
+        rowNumber++;
+        var row = '<tr>' +
+            '<td class="col-2"><select class="form-control" id="component' + rowNumber + '" onchange="componentChange(this,' + rowNumber + ')"></td>' +
+            '<td class="col-4"><select class="form-control" id="target' + rowNumber + '" ></select></td>' +
+            '<td class="col-4"><select class="form-control" id="source' + rowNumber + '" multiple="multiple"></select></td>' +
+            '<td class="col-2"><input  type="checkbox" id="row' + rowNumber + '" onclick="lockRow(this,' + rowNumber + ')" name="Lock"/>  <label for="Lock">Lock</label></td>' +
+            '</tr>';
+
+        $("#mapTable").append(row);
+
+        //Compnent Drop Down
+        var components = $("#component" + rowNumber).select2();
+        for (let component in componentsList) {
+            components.append('<option value=' + componentsList[component] + '>' + componentsList[component] + '</option>');
+        }
+
+        var targetKVP = @Json.Serialize(Model.LastOrDefault().FieldsAndType);
+
+        var target = $("#target" + rowNumber).select2({
+            tags: true,
+            tokenSeparators: [',', ' '],
+            width: 'resolve' // need to override the changed default
+        });
+
+        target.append('<option value="-1">Select Target</option>');
+        for (let temp in targetKVP) {
+            target.append('<option value=' + targetKVP[temp].field + ' :: ' + targetKVP[temp].type + '>' + targetKVP[temp].field + ' :: ' + targetKVP[temp].type + '</option>');
+        }
+
+        //Source binding
+        var sourceKVP = @Json.Serialize(Model.FirstOrDefault().FieldsAndType);
+
+        var source = $("#source" + rowNumber).select2({
+            tags: true,
+            tokenSeparators: [',', ' '],
+            width: 'resolve' // need to override the changed default
+        });
+
+        for (let temp in sourceKVP) {
+            source.append('<option value=' + sourceKVP[temp].field + ' :: ' + sourceKVP[temp].type + '>' + sourceKVP[temp].field + ' :: ' + sourceKVP[temp].type + '</option>');
+        }
+
+        return rowNumber;
+    }
+
+    function lockRow(element, rowNumber) {
+
+        // Get Details For Each Row
+        var componentDropDown = $("#component" + rowNumber + " :selected");
+        var sourceDropDown = $("#source" + rowNumber + " :selected");
+        var targetDropDown = $("#target" + rowNumber);
+
+        let concatenateQuery = null;
+
+        //Check Component Type
+        if (componentDropDown.val() == "concatenate") {
+
+            concatenateQuery = GenerateConcatenateQuery(sourceDropDown);
+            jsonataQuery += '"' + targetDropDown.val() + '":' + concatenateQuery + ',';
+
+        } else if (componentDropDown.val() == "pre-defined") {
+            jsonataQuery += '"' + targetDropDown.val() + '":"' + sourceDropDown.val() + '",';
+        } else {
+            jsonataQuery += '"' + targetDropDown.val() + '":' + sourceDropDown.val() + ',';
+        }
+
+        PrettyPrintJson('{' + jsonataQuery + '}');
+        console.log(jsonataQuery);
+
+        //Disable Row
+        $(element).closest('tr').find(":input").attr('disabled', !this.checked);
+
+        //Data Structure to Persist Data
+        var jsonMetaData = {};
+        jsonMetaData.source = concatenateQuery ? concatenateQuery :sourceDropDown.val();
+        jsonMetaData.target = targetDropDown.val();
+        jsonMetaData.componentType = componentDropDown.val();
+
+        if(!jsonMetaDataList.some(x => x.name == targetDropDown.val()))
+            jsonMetaDataList.push(jsonMetaData);
+    }
+
+    function GenerateConcatenateQuery(dropDown)
+    {
+        let concatenateQuery = "";
+        for (let index = 0; index < dropDown.length; index++) {
+            concatenateQuery += dropDown[index].innerText.split("::")[0] + " & ";
+        }
+        // remove last &
+        concatenateQuery = concatenateQuery.substring(0, concatenateQuery.length - 2);
+        return concatenateQuery;
+    }
+
+    function GenerateConcatenateDropDownValue(csvString)
+    {
+        let splitedValues = csvString.split(" & ").map(function(item) {return item.trim(); });
+        console.log(splitedValues);
+        return splitedValues;
+    }
+
+    function componentChange(element, rowNumber) {
+        // Get Component details
+        var componentDropDown = $("#component" + rowNumber + " :selected");
+        var sourceDropDownOptions = $("#source" + rowNumber + " > option");
+        var targetDropDownOptions = $("#target" + rowNumber + " > option");
+
+        if (componentDropDown.val() == "custom-field") {
+            targetDropDownOptions.each(function() {
+                $(this).prop('disabled', function(_, disabled) {
+                    return true;
+                });
+            });
+        } else {
+            targetDropDownOptions.each(function() {
+                if (!this.text.includes(":: Array") && !this.text.includes(":: Object")) {
+                    $(this).prop('disabled', function(_, disabled) {
+                        return false;
+                    });
+                } else {
+                    $(this).prop('disabled', function(_, disabled) {
+                        return true;
+                    });
+                }
+            });
+        }
+    }
+
+    var jsonMetaDataList = [];
+    var jsonataQuery = "";
 </script>
 }

@@ -9,13 +9,16 @@
 <p>
     <a asp-action="AddJson" class="btn btn-primary">Create New</a>
     <a asp-action="MapJson" class="btn btn-primary">Map Json</a>
-@*    <a asp-action="MapJsonCustom" class="btn btn-primary">Map Custom</a>*@
+    <a asp-action="MapJsonCustom" class="btn btn-primary">Map Custom</a>
 </p>
 <div class="table-responsive">
 
     <table class="table ">
         <thead>
             <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.ConnectionType)
+                </th>
                 <th>
                     @Html.DisplayNameFor(model => model.URL)
                 </th>
@@ -30,6 +33,9 @@
             @foreach (var item in Model.ToList())
             {
                 <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.ConnectionType)
+                    </td>
                     <td>
                         @Html.DisplayFor(modelItem => item.URL)
                     </td>

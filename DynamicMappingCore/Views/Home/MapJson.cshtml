@@ -28,9 +28,14 @@
     </div>
 </div>
 
+<div class="row">
+    <p id="jsonataResult"></p>
+</div>
+
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 <script src="~/lib/select2.min.js"></script>
+<script src="~/lib/jsonata.min.js"></script>
 <script>
     var rowNumber = 0;
     $(function() {
@@ -41,7 +46,7 @@
             var row = '<tr>' +
                 '<td class="col-1" ><input type="checkbox" name="isComponent' + rowNumber + '" value=""></td>' +
                 '<td class="col-5"><select class="form-control" id="target' + rowNumber + '" ></select></td>' +
-                '<td class="col-5"><select class="form-control" id="source' + rowNumber + '" multiple="multiple" ></select></td>' +
+                '<td class="col-5"><select class="customSelect form-control" id="source' + rowNumber + '" multiple="multiple" ></select></td>' +
                 '</tr>';
             $("#mapTable").append(row);
 
@@ -62,7 +67,6 @@
 
             var source = $("#source" + rowNumber).select2({
                 tags: true,
-
                 tokenSeparators: [',', ' '],
                 width: 'resolve' // need to override the changed default
             });
@@ -79,7 +83,7 @@
             var row = '<tr>' +
             '<td class="col-1" ><input type="checkbox" name="isComponent' + rowNumber + '" value="" checked></td>' +
             '<td class="col-5" ><select class="form-control" id="component' + rowNumber + '" ></select></td>' +
-            '<td class="col-5"><select class="form-control" id="source' + rowNumber + '" ></select></td>' +
+            '<td class="col-5"><select class="customSelect form-control" id="source' + rowNumber + '" ></select></td>' +
             '</tr>';
             $("#mapTable").append(row);
 
@@ -101,7 +105,6 @@
 
             var source = $("#source" + rowNumber).select2({
                 tags: true,
-
                 tokenSeparators: [',', ' '],
                 width: 'resolve' // need to override the changed default
             });
@@ -219,6 +222,5 @@
             console.log(mapTable);
         });
     });
-
 </script>
 }
