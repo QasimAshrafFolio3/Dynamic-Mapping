@@ -35,7 +35,7 @@ namespace DynamicMappingCore.Controllers
         [HttpGet]
         public JsonResult GetJsonMetaData()
         {
-            return Json(InMemJsonMetaDataDb.Where(x => !string.IsNullOrWhiteSpace(x.Key)).Select(x=>x.Value));
+            return Json(InMemJsonMetaDataDb.Where(x => !string.IsNullOrWhiteSpace(x.Key)).Select(x => x.Value));
         }
 
         public IActionResult Privacy()
@@ -129,7 +129,7 @@ namespace DynamicMappingCore.Controllers
                 var jsonModel = item.Value;
                 tempJsonMapModel.ConnectionType = jsonModel.ConnectionType;
                 JObject jObj = JObject.Parse(IsArray(jsonModel.Json) ? JArray.Parse(jsonModel.Json).FirstOrDefault().ToString() : jsonModel.Json);
-                var jsonCustomFormatter = new ComAxJsonFlattener().CollectFields(JToken.Parse(jObj.ToString()));
+                var jsonCustomFormatter = new ComAxJsonFlattener().CollectFields(JToken.Parse(jObj.ToString()), false, true);
 
                 foreach (var fields in jsonCustomFormatter)
                 {
@@ -144,8 +144,6 @@ namespace DynamicMappingCore.Controllers
                             Type = fields.Type != "Null" ? fields.Type : typeof(string).Name
                         });
                     }
-
-
                 }
                 tempJsonMapModel.FieldsAndType = fieldsAndTypesList;
                 jsonMapModelList.Add(tempJsonMapModel);
@@ -232,22 +230,22 @@ namespace DynamicMappingCore.Controllers
             {
 
                 //Pre Processing 
-                string preProcessJson = CreateTransformation(jObject);
+                string jsonataFinalQuery = CreateJsonAtaQuery(jObject);
 
-                System.IO.File.WriteAllText(@"D:\\Result.jsonata", preProcessJson);
+                System.IO.File.WriteAllText(@"D:\\Result.jsonata", jsonataFinalQuery);
 
                 if (IsArray(source.Json))
                 {
                     foreach (var children in JArray.Parse(source.Json).Children())
                     {
-                        JsonataQuery jsonataQuery = new JsonataQuery(preProcessJson);
+                        JsonataQuery jsonataQuery = new JsonataQuery(jsonataFinalQuery);
                         result += jsonataQuery.Eval(children.ToString());
                     }
                 }
                 else
                 {
                     // Json ata.
-                    JsonataQuery jsonataQuery = new JsonataQuery(preProcessJson);
+                    JsonataQuery jsonataQuery = new JsonataQuery(jsonataFinalQuery);
                     JToken data = JToken.Parse(source.Json);
                     result = jsonataQuery.Eval(data.ToString());
                 }
@@ -260,6 +258,16 @@ namespace DynamicMappingCore.Controllers
         public IActionResult SaveMappingJsonAtaWithQuery(List<JsonMetaData> JsonMetaDataList, string jsonataQuery)
         {
             InMemJsonMetaDataDb.Clear();
+
+            Dictionary<string, object> dictObjectList = new Dictionary<string, object>();
+            JsonMetaDataList.ForEach(x => { dictObjectList.TryAdd(x.Target, x.Expression != null ? x.Expression : x.Source); });
+
+            var outputJoBject = dictObjectList.Unflatten();
+            result = CreateJsonAtaQuery(outputJoBject);
+
+            // Replace all ,} with };
+            result = result.Replace(",}","}");
+
             InMemJsonMetaDataDb.Add(jsonataQuery.Trim(), JsonMetaDataList);
             return RedirectToAction("ResultJson");
         }
@@ -309,17 +317,13 @@ namespace DynamicMappingCore.Controllers
 
 
         #region Private method
-        private string CreateTransformation(JObject jObject)
+        private string CreateJsonAtaQuery(JObject jObject)
         {
             string tempJson = string.Empty;
             foreach (var x in jObject)
             {
-                if (x.Key == "loopstart")
-                    tempJson += "$map(locations,function($v,$i,$a) {";
-                else if (x.Key == "loopend")
-                    tempJson += "}";
-                else if (x.Value.Type == JTokenType.Object)
-                    tempJson += string.Format("\"{0}\":{1},", x.Key, CreateTransformation(JObject.Parse(x.Value.ToString())));
+                if (x.Value.Type == JTokenType.Object)
+                    tempJson += string.Format("\"{0}\":{1},", x.Key, CreateJsonAtaQuery(JObject.Parse(x.Value.ToString())));
                 else
                     tempJson += string.Format("\"{0}\":{1},", x.Key, x.Value.ToString().Replace("\"", "").Replace("::", "\""));
             }

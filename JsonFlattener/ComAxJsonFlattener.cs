@@ -12,7 +12,7 @@ namespace JsonFlattener
             jsonModelList = new List<ComAxJsonModel>();
         }
 
-        public List<ComAxJsonModel> CollectFields(JToken jToken)
+        public List<ComAxJsonModel> CollectFields(JToken jToken, bool includeObject = false, bool includeArray = false)
         {
 
             switch (jToken.Type)
@@ -20,7 +20,7 @@ namespace JsonFlattener
                 case JTokenType.Object:
                     foreach (var child in jToken.Children<JProperty>())
                     {
-                        if (!string.IsNullOrWhiteSpace(jToken.Path) && !jsonModelList.Any(x => x.Name == jToken.Path))
+                        if (includeObject && !string.IsNullOrWhiteSpace(jToken.Path) && !jsonModelList.Any(x => x.Name == jToken.Path))
                         {
                             jsonModelList.Add(new ComAxJsonModel()
                             {
@@ -35,7 +35,7 @@ namespace JsonFlattener
                 case JTokenType.Array:
                     foreach (var child in jToken.Children())
                     {
-                        if (!string.IsNullOrWhiteSpace(jToken.Path) && !jsonModelList.Any(x => x.Name == jToken.Path))
+                        if (includeArray && !string.IsNullOrWhiteSpace(jToken.Path) && !jsonModelList.Any(x => x.Name == jToken.Path))
                         {
                             jsonModelList.Add(new ComAxJsonModel()
                             {

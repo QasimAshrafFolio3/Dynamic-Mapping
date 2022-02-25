@@ -39,8 +39,7 @@
 <script src="~/lib/select2.min.js"></script>
 <script src="~/lib/jsonata.min.js"></script>
 <script>
-
-        $(function() {
+    $(function() {
 
         renderUI();
 
@@ -55,8 +54,7 @@
                 })
                 .fail(function(jqxhr, status, error) {
                     console.log(error);
-                })
-            console.log(mapTable);
+                });
         });
 
         $("#btnSaveCustom").click(function() {
@@ -74,71 +72,74 @@
     });
 
 
+    // rendre UI on page load
     function renderUI() {
 
         $.get('/Home/GetJsonMetaData')
             .done(function(response, status, jqxhr) {
-                response[0].forEach(function(element, index) {
-                    let row = addRow();
-                    $('#component' + row).val(element.componentType);
-                    if (element.componentType == "mapping-Table") {
-                        renderMappingTable(row,element.source,element.target,element.expression);
-                    }
-                    else if (element.componentType == "custom-field") {
-                        $('#target' + row).append('<option value=' + element.target + ' selected >' + element.target + '</option>');
-                        $('#source' + row).append('<option value=' + element.source + ' selected >' + element.source + '</option>');
-                    } else if (element.componentType == "pre-defined") {
-
-                        $('#target' + row).val(element.target);
-                        $('#source' + row).append('<option value=' + element.source + ' selected >' + element.source + '</option>');
-                    } else if (element.componentType == "concatenate") {
-                        $('#target' + row).val(element.target);
-                        $('#source' + row).val(GenerateConcatenateDropDownValue(element.source));
-                    } else {
-                        $('#target' + row).val(element.target);
-                        $('#source' + row).val(element.source);
-                    }
-
-                });
+                if (response.length > 0) {
+                    response[0].forEach(function(element, index) {
+                        let row = addRow();
+                        $('#component' + row).val(element.componentType);
+                        if (element.componentType == "mapping-Table") {
+                            renderMappingTable(row, element.source, element.target, element.expression);
+                        } else if (element.componentType == "jsonata-expression") {
+                            $('#target' + row).val(element.target);
+                            showExpressionArea(row);
+                            $('#expression' + row).val(element.expression);
+                        } else if (element.componentType == "custom-field") {
+                            $('#target' + row).append('<option value=' + element.target + ' selected >' + element.target + '</option>');
+                            $('#source' + row).append('<option value=' + element.source + ' selected >' + element.source + '</option>');
+                        } else if (element.componentType == "concatenate") {
+                            $('#target' + row).val(element.target);
+                            $('#source' + row).select2({tags:true,multiple:true,tokenSeparators: [',', ' ']});
+                            $('#source' + row).val(GenerateConcatenateDropDownValue(element.source)).change();
+                        } else {
+                            $('#target' + row).val(element.target);
+                            $('#source' + row).val(element.source);
+                        }
+                    });
+                }
             })
             .fail(function(jqxhr, status, error) {
                 console.log(error);
             });
     }
 
-    function renderMappingTable(rowNumber,source,target,expression) {
+    // render mapping table on load
+    function renderMappingTable(rowNumber, source, target, expression) {
         addMappingTable(rowNumber);
         $('#target' + rowNumber).val(target);
         $('#source' + rowNumber).val(source);
 
         let expressionArray = expression.split(')').join('').split('(').join('').split(':');
         expressionArray.reverse();
-        expressionArray.forEach(function(element, index){
+        expressionArray.forEach(function(element, index) {
             let tempSourceDestination;
-            let tempDestination= "";
-            let tempSource ="";
-            if(index == 0) //Last element processing
+            let tempDestination = "";
+            let tempSource = "";
+            if (index == 0) //Last element processing
             {
                 tempSourceDestination = element.trim()
-                tempDestination= tempSourceDestination.trim();
+                tempDestination = tempSourceDestination.trim();
                 tempSource = '\*';
-            }
-            else{
-                tempSourceDestination = element.trim().split('=')[1].split('?') ;
-                tempDestination= tempSourceDestination[1].trim();
+            } else {
+                tempSourceDestination = element.trim().split('=')[1].split('?');
+                tempDestination = tempSourceDestination[1].trim();
                 tempSource = tempSourceDestination[0].trim();
             }
-            $('#mappingTable'+ rowNumber).append('<tr><td><input type="text" value='+tempDestination+' /></td><td><input type="text" value='+tempSource+' /></td></tr>');
+            $('#mappingTable' + rowNumber).append('<tr><td><input type="text" value=' + tempDestination + ' /></td><td><input type="text" value=' + tempSource + ' /></td></tr>');
         });
     }
 
+    // add new row in main table.
     function addRow() {
         rowNumber++;
         var row = '<tr id="row' + rowNumber + '" class="simpleRow">' +
             '<td class="col-2" id="column1" ><select class="form-control" id="component' + rowNumber + '" onchange="componentChange(this,' + rowNumber + ')"></td>' +
             '<td class="col-4" id="column2" ><select class="form-control" id="target' + rowNumber + '" ></select></td>' +
-            '<td class="col-4" id="column3" ><select class="form-control" id="source' + rowNumber + '" multiple="multiple"></select></td>' +
-            '<td class="col-2" id="column4" ><input  type="checkbox" id="row' + rowNumber + '" onclick="lockRow(this,' + rowNumber + ')" name="Lock"/>  <label for="Lock">Lock</label></td>' +
+            '<td class="col-4" id="column3" ><select class="form-control" id="source' + rowNumber + '" ></select><input type="text" id="expression' + rowNumber + '" style="display:none;width:100%"/></td>' +
+            '<td class="col-2" id="column4" ><input type="checkbox" id="row' + rowNumber + '" onclick="lockRow(this,' + rowNumber + ')" name="Lock"/>  <label for="Lock">Lock</label></td>' +
             '</tr>';
 
         $('#mainTable').append(row);
@@ -151,11 +152,7 @@
 
         var targetKVP = @Json.Serialize(Model.LastOrDefault().FieldsAndType);
 
-        var target = $('#target' + rowNumber).select2({
-            tags: true,
-            tokenSeparators: [',', ' '],
-            width: 'resolve' // need to override the changed default
-        });
+        var target = $('#target' + rowNumber).select2();
 
         target.append('<option value="-1">Select Target</option>');
         for (let index in targetKVP) {
@@ -165,11 +162,7 @@
         //Source binding
         var sourceKVP = @Json.Serialize(Model.FirstOrDefault().FieldsAndType);
 
-        var source = $('#source' + rowNumber).select2({
-            tags: true,
-            tokenSeparators: [',', ' '],
-            width: 'resolve' // need to override the changed default
-        });
+        var source = $('#source' + rowNumber).select2();
 
         for (let index in sourceKVP) {
             source.append('<option value=' + sourceKVP[index].field + ' :: ' + sourceKVP[index].type + '>' + sourceKVP[index].field + ' :: ' + sourceKVP[index].type + '</option>');
@@ -189,26 +182,27 @@
         var jsonMetaData = {};
 
         //Check Component Type
-        if (componentDropDown.val() == "mapping-Table")  {
-            let tempSource = GenerateMappingTableQuery(sourceDropDown.val(),rowNumber);
+        if (componentDropDown.val() == "mapping-Table") {
+            let tempSource = GenerateMappingTableQuery(sourceDropDown.val(), rowNumber);
             jsonataQuery += '"' + targetDropDown.val() + '":' + tempSource + ',';
-            jsonMetaData.expression = tempSource ;
-            jsonMetaData.source = sourceDropDown.val() ;
-        }
-        else if (componentDropDown.val() == 'concatenate') {
+            jsonMetaData.expression = tempSource;
+            jsonMetaData.source = sourceDropDown.val();
+        } else if (componentDropDown.val() == "jsonata-expression") {
+            let expression = $('#expression' + rowNumber).val();
+            jsonMetaData.expression = expression;
+            jsonataQuery += '"' + targetDropDown.val() + '":' + expression + ',';
+        } else if (componentDropDown.val() == 'concatenate') {
             let concatenateQuery = GenerateConcatenateQuery(sourceDropDown);
             jsonataQuery += '"' + targetDropDown.val() + '":' + concatenateQuery + ',';
-            jsonMetaData.source = tempSource ;
-        } else if (componentDropDown.val() == "pre-defined") {
-            jsonataQuery += '"' + targetDropDown.val() + '":"' + sourceDropDown.val() + '",';
-            jsonMetaData.source = sourceDropDown.val() ;
+            jsonMetaData.source = concatenateQuery;
         } else {
             jsonataQuery += '"' + targetDropDown.val() + '":' + sourceDropDown.val() + ',';
-            jsonMetaData.source = sourceDropDown.val() ;
+            jsonMetaData.source = sourceDropDown.val();
         }
 
-        PrettyPrintJson('{' + jsonataQuery + '}');
-        console.log(jsonataQuery);
+        // Replace all ,} with };
+        PrettyPrintJson('{' + jsonataQuery.replace(/,}*$/, "}") + '}');
+        console.log('{' + jsonataQuery.replace(/,}*$/, "}") + '}');
 
         //Disable Row
         $(element).closest('tr').find(':input').attr('disabled', !this.checked);
@@ -234,42 +228,38 @@
         let splitedValues = csvString.split(' & ').map(function(item) {
             return item.trim();
         });
-        console.log(splitedValues);
         return splitedValues;
     }
 
-    function GenerateMappingTableQuery(sourceDropDownValue,rowNumber)
-    {
+    function GenerateMappingTableQuery(sourceDropDownValue, rowNumber) {
         let mappingQuery = "";
-        let mappingTableStack =[];
-        let rowList = $('#mappingTable'+ rowNumber +' tbody tr').get().reverse();
+        let mappingTableStack = [];
+        let rowList = $('#mappingTable' + rowNumber + ' tbody tr').get().reverse();
 
-        for(let index= 0; index < rowList.length ; index++)
-        {
+        for (let index = 0; index < rowList.length; index++) {
             let destinationValue = $(rowList[index]).find("td:eq(0) input[type='text']").val();;
             let sourcevalue = $(rowList[index]).find("td:eq(1) input[type='text']").val();
 
-            if(sourcevalue != '*')
+            if (sourcevalue != '*')
                 mappingTableStack.push("(" + sourceDropDownValue + " = " + sourcevalue + " ? " + destinationValue + " : ");
             else
                 mappingTableStack.push(destinationValue)
         }
 
-        for(let index in mappingTableStack)
-            mappingQuery += mappingTableStack[index] ;
+        for (let index in mappingTableStack)
+            mappingQuery += mappingTableStack[index];
 
         // add Brackets
-        var closingBrack= ")";
-        mappingQuery += closingBrack.repeat(mappingTableStack.length-1)
+        var closingBrack = ")";
+        mappingQuery += closingBrack.repeat(mappingTableStack.length - 1)
         return mappingQuery;
     }
 
-    function GenerateConditionQuery(LeftPart,rigthPart,condition,truePart,falsepart)
-    {
+    function GenerateConditionQuery(LeftPart, rigthPart, condition, truePart, falsepart) {
         let conditionPart = LeftPart + condition + rigthPart;
         let _truePart = truePart;
         let _falsePart = falsepart;
-        return conditionPart + " ? " +  _truePart +" : "+ _falsePart;
+        return conditionPart + " ? " + _truePart + " : " + _falsePart;
     }
 
     function componentChange(element, rowNumber) {
@@ -279,17 +269,29 @@
         var sourceDropDownOptions = $('#source' + rowNumber + ' > option');
         var targetDropDownOptions = $('#target' + rowNumber + ' > option');
 
+
+
+        hideMappingTable(rowNumber);
+        hideExpressionArea(rowNumber);
+
+        //Render complete row
         if (componentDropDown.val() == 'mapping-Table') {
             addMappingTable(rowNumber);
+        } else if (componentDropDown.val() == "jsonata-expression") {
+            showExpressionArea(rowNumber);
         } else if (componentDropDown.val() == 'custom-field') {
-            hideMappingTable(rowNumber);
+            $('#target' + rowNumber).select2({tags:true,tokenSeparators: [',', ' ']});
+            //disable all target fields name
             targetDropDownOptions.each(function() {
                 $(this).prop('disabled', function(_, disabled) {
                     return true;
                 });
             });
-        } else  {
-            hideMappingTable(rowNumber);
+        } else if (componentDropDown.val() == "concatenate") {
+            // Handling Source DropDown
+            $('#source' + rowNumber).select2({tags:true,multiple:true,tokenSeparators: [',', ' ']});
+        } else {
+            //disable all object and array fields if any
             targetDropDownOptions.each(function() {
                 if (!this.text.includes(':: Array') && !this.text.includes(':: Object')) {
                     $(this).prop('disabled', function(_, disabled) {
@@ -304,65 +306,90 @@
         }
     }
 
+    function showExpressionArea(rowNumber) {
+        $('#source' + rowNumber).select2().next().hide();
+        $('#expression' + rowNumber).show();
+    }
+
+    function hideExpressionArea(rowNumber) {
+        $('#source' + rowNumber).select2().next().show();
+        $('#expression' + rowNumber).hide();
+    }
+
     // Add Nested Mapping Table in Main Table
     function addMappingTable(rowNumber) {
 
         //Check Mapping Row Exists or not
-        let mappingRowExists = $('#mappingRow'+ rowNumber);
+        let mappingRowExists = $('#mappingRow' + rowNumber);
 
         // create if not exists
-        if(mappingRowExists.length == 0){
-        let mappingTableRow =
-            '<tr id="mappingRow'+ rowNumber +'">'+
-            '<td colspan="4">'+
-            '<input type="button" id="btnAddMapping'+ rowNumber +'" value="Add Mapping" class="btn btn-primary" onclick="addMappingRow(this,'+ rowNumber +')" />' +
-            '<div class="table-responsive">'+
-            '<table class="table" id="mappingTable'+rowNumber+'">'+
-            '<thead><tr><th>Destination</th><th>Source</th></tr></thead>'+
-            '<tbody></tbody></table></div>'+
-            '</td></tr>';
+        if (mappingRowExists.length == 0) {
+            let mappingTableRow =
+                '<tr id="mappingRow' + rowNumber + '">' +
+                '<td colspan="4">' +
+                '<input type="button" id="btnAddMapping' + rowNumber + '" value="Add Mapping" class="btn btn-primary" onclick="addMappingRow(this,' + rowNumber + ')" />' +
+                '<div class="table-responsive">' +
+                '<table class="table" id="mappingTable' + rowNumber + '">' +
+                '<thead><tr><th>Destination</th><th>Source</th></tr></thead>' +
+                '<tbody></tbody></table></div>' +
+                '</td></tr>';
 
-        $('#mainTable').append(mappingTableRow);
+            $('#mainTable').append(mappingTableRow);
 
-        ////conditions Drop Down
-        //var conditionsDD = $("#condition" + rowNumber).select2();
-        //for (let index in condtionList) {
-        //    conditionsDD.append('<option value=' + condtionList[index].value + '>' + condtionList[index].key + '</option>');
-        //}
-        //
-        ////Source binding
-        //var sourceKVP = @Json.Serialize(Model.FirstOrDefault().FieldsAndType);
-        //
-        //var source = $("#then" + rowNumber).select2({
-        //    tags: true,
-        //    tokenSeparators: [',', ' '],
-        //    width: 'resolve' // need to override the changed default
-        //});
-        //
-        //for (let index in sourceKVP) {
-        //    source.append('<option value=' + sourceKVP[index].field + ' :: ' + sourceKVP[index].type + '>' + sourceKVP[index].field + ' :: ' + sourceKVP[index].type + '</option>');
-        //}
+            ////conditions Drop Down
+            //var conditionsDD = $("#condition" + rowNumber).select2();
+            //for (let index in condtionList) {
+            //    conditionsDD.append('<option value=' + condtionList[index].value + '>' + condtionList[index].key + '</option>');
+            //}
+            //
+            ////Source binding
+            //var sourceKVP = @Json.Serialize(Model.FirstOrDefault().FieldsAndType);
+            //
+            //var source = $("#then" + rowNumber).select2({
+            //    tags: true,
+            //    tokenSeparators: [',', ' '],
+            //    width: 'resolve' // need to override the changed default
+            //});
+            //
+            //for (let index in sourceKVP) {
+            //    source.append('<option value=' + sourceKVP[index].field + ' :: ' + sourceKVP[index].type + '>' + sourceKVP[index].field + ' :: ' + sourceKVP[index].type + '</option>');
+            //}
         }
         // If row already exist and hide due to component change then show it again.
-        else {mappingRowExists.show();}
+        else {
+            mappingRowExists.show();
+        }
     }
 
     // hide show mapping table when component changes
-    function hideMappingTable(rowNumber){
+    function hideMappingTable(rowNumber) {
         $('#mappingRow' + rowNumber).hide();
     }
 
     // Add new row in mapping table for mapping component.
-    function addMappingRow(element,rowNumber) {
-        $('#mappingTable'+rowNumber).append('<tr><td><input type="text"/></td><td><input type="text"/></td></tr>');
+    function addMappingRow(element, rowNumber) {
+        $('#mappingTable' + rowNumber).append('<tr><td><input type="text"/></td><td><input type="text"/></td></tr>');
     }
 
     var rowNumber = 0;
-    var componentsList = ["Select Component", "simple", "pre-defined", "concatenate", "custom-field", "mapping-Table"];
-    var condtionList = [ { key: 'Equals', value: '==' },
-    { key: 'Not Equals', value: '!=' },
-    { key: 'Greater', value: '&gt' },
-    { key: 'Lesser', value: '<' }];
+    var componentsList = ["Select Component", "simple", "concatenate", "custom-field", "mapping-Table", "jsonata-expression"];
+    var condtionList = [{
+            key: 'Equals',
+            value: '=='
+        },
+        {
+            key: 'Not Equals',
+            value: '!='
+        },
+        {
+            key: 'Greater',
+            value: '&gt'
+        },
+        {
+            key: 'Lesser',
+            value: '<'
+        }
+    ];
     var jsonMetaDataList = [];
     var jsonataQuery = "";
 </script>
