@@ -28,7 +28,7 @@ namespace JsonFlattener
                                 Type = jToken.Type.ToString()
                             });
                         }
-                        CollectFields(child);
+                        CollectFields(child,includeObject,includeArray);
 
                     }
                     break;
@@ -43,11 +43,11 @@ namespace JsonFlattener
                                 Type = jToken.Type.ToString()
                             });
                         }
-                        CollectFields(child);
+                        CollectFields(child,includeObject,includeArray);
                     }
                     break;
                 case JTokenType.Property:
-                    CollectFields(((JProperty)jToken).Value);
+                    CollectFields(((JProperty)jToken).Value,includeObject,includeArray);
                     break;
                 default:
                     jsonModelList.Add(new ComAxJsonModel()
