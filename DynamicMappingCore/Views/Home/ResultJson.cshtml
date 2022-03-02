@@ -1,9 +1,70 @@
-﻿
-@{
+﻿@{
     ViewData["Title"] = "MapJson";
 }
 
-<p>
-    @ViewBag.Result
-</p>
+<h4>Result</h4>
+<p id="result">@ViewBag.Result</p>
+<br />
+<h4>Source</h4>
+<p >@ViewBag.Source</p>
+<br />
+<h4>JsonAtaQuery</h4>
+<p> @ViewBag.JsonAtaQuery </p>
+<br />
+<h4>UnflattenJsonAta</h4>
+<p> @ViewBag.UnflattenJsonAta </p>
 
+@*<div>
+    <div class="row">
+        <div class="col-md-1">
+            <label name="AccesToken" class="control-label">AccessToken</label>
+        </div>
+        <div class="col-md-9">
+            <div class="form-group">
+                <input id="AccesToken" name="AccesToken" class="form-control" />
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-1">
+            <label name="URLEndpoint" class="control-label">URLEndpoint</label>
+        </div>
+        <div class="col-md-9">
+            <div class="form-group">
+                <input id="URLEndpoint" name="URLEndpoint" class="form-control" />
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Push" class="btn btn-primary" onclick="pushJavascript()" />
+    </div>
+</div>*@
+
+@*@section Scripts {
+
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+<script>
+
+    function pushJavascript(){
+        var URL = $("#URLEndpoint").val();
+        var AccesToken = $("#AccesToken").val();
+        var result = $("#result").text();
+        var settings = {
+          "url": URL,
+          "method": "POST",
+          "timeout": 0,
+          "crossDomain": true,
+          "headers": {
+            "Authorization": "Bearer " + AccesToken,
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin":"*"
+          },
+          "data": JSON.stringify(result),
+        };
+
+        $.ajax(settings).done(function (response) {
+          console.log(response);
+        });}
+</script>
+}*@

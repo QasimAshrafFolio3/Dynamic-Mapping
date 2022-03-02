@@ -22,6 +22,8 @@ namespace DynamicMappingCore.Controllers
         public static Dictionary<string, List<JsonMetaData>> InMemJsonMetaDataDb = new Dictionary<string, List<JsonMetaData>>();
 
         public static string result;
+        public static string currentUnflattenJsonAta;
+        public static string currentJsonAtaQuery;
         public HomeController(ILogger<HomeController> logger)
         {
             _logger = logger;
@@ -259,14 +261,16 @@ namespace DynamicMappingCore.Controllers
         {
             InMemJsonMetaDataDb.Clear();
 
+            currentJsonAtaQuery = jsonataQuery;
+
             Dictionary<string, object> dictObjectList = new Dictionary<string, object>();
             JsonMetaDataList.ForEach(x => { dictObjectList.TryAdd(x.Target, x.Expression != null ? x.Expression : x.Source); });
 
             var outputJoBject = dictObjectList.Unflatten();
-            result = CreateJsonAtaQuery(outputJoBject);
+            currentUnflattenJsonAta = CreateJsonAtaQuery(outputJoBject);
 
             // Replace all ,} with };
-            result = result.Replace(",}","}");
+            currentUnflattenJsonAta = currentUnflattenJsonAta.Replace(",}", "}");
 
             InMemJsonMetaDataDb.Add(jsonataQuery.Trim(), JsonMetaDataList);
             return RedirectToAction("ResultJson");
@@ -347,7 +351,16 @@ namespace DynamicMappingCore.Controllers
 
         public IActionResult ResultJson()
         {
+            var source = InMemJsonModeDb.Where(x => x.Value.ConnectionType == ConnectionType.source).FirstOrDefault().Value;
+            ViewBag.Source = source.Json;
+
+            ViewBag.JsonAtaQuery = currentJsonAtaQuery;
+            ViewBag.UnflattenJsonAta = currentUnflattenJsonAta;
+
+            JsonataQuery jsonataQuery = new JsonataQuery(currentUnflattenJsonAta);
+            result = jsonataQuery.Eval(source.Json.ToString());
             ViewBag.Result = result;
+
             return View();
         }
     }
