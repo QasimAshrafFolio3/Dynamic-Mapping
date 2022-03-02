@@ -8,8 +8,7 @@
 
 <input type="button" id="btnAdd" value="Add" class="btn btn-primary" onclick="addRow()" />
 <input type="button" id="btnSaveJsonAta" value="Save & Convert [JsonAta]" class="btn btn-primary" />
-<input type="button" id="btnSaveCustom" value="Save & Convert [Custom]" class="btn btn-primary" />
-
+@*<input type="button" id="btnSaveCustom" value="Save & Convert [Custom]" class="btn btn-primary" />*@
 <div class="row">
     <div class="col-md-12">
         <div class="table-responsive">
@@ -187,6 +186,11 @@
             jsonataQuery += '"' + targetDropDown.val() + '":' + tempSource + ',';
             jsonMetaData.expression = tempSource;
             jsonMetaData.source = sourceDropDown.val();
+        }else if (componentDropDown.val() == "foreach") {
+            let tempSource = GenerateLoopingTableQuery(sourceDropDown.val(), rowNumber);
+            jsonataQuery += '"' + targetDropDown.val() + '":' + tempSource + ',';
+            jsonMetaData.expression = tempSource;
+            jsonMetaData.source = sourceDropDown.val();
         } else if (componentDropDown.val() == "jsonata-expression") {
             let expression = $('#expression' + rowNumber).val();
             jsonMetaData.expression = expression;
@@ -255,6 +259,22 @@
         return mappingQuery;
     }
 
+     function GenerateLoopingTableQuery(sourceDropDownValue, rowNumber) {
+
+        let rowList = $('#loopingTable' + rowNumber + ' tbody tr');
+        let loopFor = '$map(' + sourceDropDownValue +',function($v){{%json%}})';
+        let loopingQuery = ""
+        for (let index = 0; index < rowList.length; index++) {
+            let destinationValue = $(rowList[index]).find("td:eq(0) input[type='text']").val();;
+            let sourcevalue = $(rowList[index]).find("td:eq(1) input[type='text']").val();
+            loopingQuery += '"' + destinationValue+ '" : ' + 
+                                (sourcevalue.startsWith("$") ? sourcevalue.replace('$','$v.'): sourcevalue) + ',';
+        }
+
+        loopingQuery = loopFor.replace('%json%',loopingQuery)
+        return loopingQuery;
+    }
+
     function GenerateConditionQuery(LeftPart, rigthPart, condition, truePart, falsepart) {
         let conditionPart = LeftPart + condition + rigthPart;
         let _truePart = truePart;
@@ -266,13 +286,18 @@
 
         // Get Component details
         var componentDropDown = $('#component' + rowNumber + ' :selected');
+
+        //Reset setting on componenet drop down change
+        $('#source' + rowNumber).select2().val(null).trigger('changes');
+        $('#target' + rowNumber).select2().val(null).trigger('changes');
+
         var sourceDropDownOptions = $('#source' + rowNumber + ' > option');
         var targetDropDownOptions = $('#target' + rowNumber + ' > option');
 
-
-
+        // Hide additional things.
         hideMappingTable(rowNumber);
         hideExpressionArea(rowNumber);
+        hideLoopingTable(rowNumber);
 
         //Render complete row
         if (componentDropDown.val() == 'mapping-Table') {
@@ -290,20 +315,48 @@
         } else if (componentDropDown.val() == "concatenate") {
             // Handling Source DropDown
             $('#source' + rowNumber).select2({tags:true,multiple:true,tokenSeparators: [',', ' ']});
-        } else {
-            //disable all object and array fields if any
-            targetDropDownOptions.each(function() {
-                if (!this.text.includes(':: Array') && !this.text.includes(':: Object')) {
+        } else if (componentDropDown.val() == "foreach"){
+            enableArrayObjectOption(targetDropDownOptions);
+            enableArrayObjectOption(sourceDropDownOptions);
+            addLoopingTable(rowNumber);
+        }
+        else {
+            disableArrayObjectOption(targetDropDownOptions);
+            disableArrayObjectOption(sourceDropDownOptions);
+        }
+    }
+
+    function disableArrayObjectOption(dropdown)
+    {
+        //disable all object and array fields if any
+            dropdown.each(function() {
+                if (this.text.includes(':: Array') || this.text.includes(':: Object')) {
+                    $(this).prop('disabled', function(_, disabled) {
+                        return true;
+                    });
+                } else {
                     $(this).prop('disabled', function(_, disabled) {
                         return false;
                     });
-                } else {
+                }
+            });
+    }
+
+    function enableArrayObjectOption(dropdown)
+    {
+        //enable all object and array fields if any
+            dropdown.each(function() {
+                 if (this.text.includes(':: Array') || this.text.includes(':: Object')) {
+                    $(this).prop('disabled', function(_, disabled) {
+                        return false;
+                    });
+                }
+                else {
                     $(this).prop('disabled', function(_, disabled) {
                         return true;
                     });
                 }
             });
-        }
     }
 
     function showExpressionArea(rowNumber) {
@@ -327,37 +380,44 @@
             let mappingTableRow =
                 '<tr id="mappingRow' + rowNumber + '">' +
                 '<td colspan="4">' +
-                '<input type="button" id="btnAddMapping' + rowNumber + '" value="Add Mapping" class="btn btn-primary" onclick="addMappingRow(this,' + rowNumber + ')" />' +
-                '<div class="table-responsive">' +
+                '<div class="row"><div class="col-md-2"><input type="button" id="btnAddMapping' + rowNumber + '" value="Add Mapping" class="btn btn-primary" onclick="addMappingRow(this,' + rowNumber + ')" />' +
+                '</div><div class="col-md-10"><div class="table-responsive">' +
                 '<table class="table" id="mappingTable' + rowNumber + '">' +
                 '<thead><tr><th>Destination</th><th>Source</th></tr></thead>' +
-                '<tbody></tbody></table></div>' +
+                '<tbody></tbody></table></div></div></div>' +
                 '</td></tr>';
 
             $('#mainTable').append(mappingTableRow);
-
-            ////conditions Drop Down
-            //var conditionsDD = $("#condition" + rowNumber).select2();
-            //for (let index in condtionList) {
-            //    conditionsDD.append('<option value=' + condtionList[index].value + '>' + condtionList[index].key + '</option>');
-            //}
-            //
-            ////Source binding
-            //var sourceKVP = @Json.Serialize(Model.FirstOrDefault().FieldsAndType);
-            //
-            //var source = $("#then" + rowNumber).select2({
-            //    tags: true,
-            //    tokenSeparators: [',', ' '],
-            //    width: 'resolve' // need to override the changed default
-            //});
-            //
-            //for (let index in sourceKVP) {
-            //    source.append('<option value=' + sourceKVP[index].field + ' :: ' + sourceKVP[index].type + '>' + sourceKVP[index].field + ' :: ' + sourceKVP[index].type + '</option>');
-            //}
         }
         // If row already exist and hide due to component change then show it again.
         else {
             mappingRowExists.show();
+        }
+    }
+
+     // Add Nested Looping  Table in Main Table
+    function addLoopingTable(rowNumber) {
+
+        //Check Looping Row Exists or not
+        let loopingRowExists = $('#loopingRow' + rowNumber);
+
+        // create if not exists
+        if (loopingRowExists.length == 0) {
+            let loopingTableRow =
+                '<tr id="loopingRow' + rowNumber + '">' +
+                '<td colspan="4">' +
+                '<div class="row"><div class="col-md-2"><input type="button" id="btnAddFields' + rowNumber + '" value="Add Fields" class="btn btn-primary" onclick="addLoopingRow(this,' + rowNumber + ')" />' +
+                '</div><div class="col-md-10"><div class="table-responsive">' +
+                '<table class="table" id="loopingTable' + rowNumber + '">' +
+                '<thead><tr><th>Destination</th><th>Source</th></tr></thead>' +
+                '<tbody></tbody></table></div></div></div>' +
+                '</td></tr>';
+
+            $('#mainTable').append(loopingTableRow);
+        }
+        // If row already exist and hide due to component change then show it again.
+        else {
+            loopingRowExists.show();
         }
     }
 
@@ -366,13 +426,24 @@
         $('#mappingRow' + rowNumber).hide();
     }
 
+
+    // hide show mapping table when component changes
+    function hideLoopingTable(rowNumber) {
+        $('#loopingRow' + rowNumber).hide();
+    }
+
     // Add new row in mapping table for mapping component.
     function addMappingRow(element, rowNumber) {
         $('#mappingTable' + rowNumber).append('<tr><td><input type="text"/></td><td><input type="text"/></td></tr>');
     }
 
+     // Add new row in looping table for mapping component.
+    function addLoopingRow(element, rowNumber) {
+        $('#loopingTable' + rowNumber).append('<tr><td><input type="text"/></td><td><input type="text"/></td></tr>');
+    }
+
     var rowNumber = 0;
-    var componentsList = ["Select Component", "simple", "concatenate", "custom-field", "mapping-Table", "jsonata-expression"];
+    var componentsList = ["Select Component", "simple", "concatenate", "custom-field", "mapping-Table", "jsonata-expression","foreach"];
     var condtionList = [{
             key: 'Equals',
             value: '=='

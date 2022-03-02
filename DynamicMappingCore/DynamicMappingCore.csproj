@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Views\Home\MapJson.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Jsonata.Net.Native" Version="1.2.0" />
     <PackageReference Include="JsonFlatten" Version="1.0.1" />
     <PackageReference Include="JUST.net" Version="4.2.0" />
