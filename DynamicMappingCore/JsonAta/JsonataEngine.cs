@@ -1,29 +1,38 @@
 ﻿using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace DynamicMappingCore.JsonAta
 {
     public class JsonataEngine
     {
+        public static Regex TernaryOperatorRegex = new Regex(@"{*}*?{*}*:{*}*");
+
         public string CreateJsonAtaQuery(JObject jObject)
         {
             StringBuilder jsonataQuery = new StringBuilder();
-            foreach (var x in jObject)
+            foreach (KeyValuePair<string, JToken> jToken in jObject)
             {
-                //Check for loo
-                if (x.Value.ToString().Contains("$map"))
-                {
-                    jsonataQuery.Append(CreateKeyValueJson(x.Key, MapFunctionQuery(x.Value.ToString())));
-                }
+                string tempValue = string.Empty;
+
+                if (jToken.Value.Type == JTokenType.Object)
+                    tempValue = CreateJsonAtaQuery(JObject.Parse(jToken.Value.ToString()));
                 else
                 {
-                    jsonataQuery.Append(CreateKeyValueJson(x.Key,
-                                        x.Value.Type == JTokenType.Object ?
-                                        CreateJsonAtaQuery(JObject.Parse(x.Value.ToString()))  // If Object then explore further.
-                                        : x.Value.ToString().Replace("\"", "").Replace("::", "\"")));
+                    //Check for loop
+                    if (jToken.Value.ToString().Contains("$map"))
+                        tempValue = MapFunctionQuery(jToken.Value.ToString());
+                    else if (TernaryOperatorRegex.IsMatch(jToken.Value.ToString()))
+                        tempValue = jToken.Value.ToString();
+                    else
+                        tempValue = jToken.Value.ToString().Replace("\"", "").Replace("::", "\"");
                 }
 
+                jsonataQuery.Append(CreateKeyValueJson(jToken.Key, tempValue));
             }
+
+
 
             //Post Processing
             jsonataQuery = new StringBuilder("{" + jsonataQuery + "}");
@@ -39,16 +48,16 @@ namespace DynamicMappingCore.JsonAta
             StringBuilder mapFunctionQuery = new StringBuilder();
 
             int startIndex = json.IndexOf("{{") + 2;
-            int endIndex =  json.LastIndexOf("}})");
-            string kvpList = json.Substring(startIndex ,endIndex-startIndex);
-            
-            foreach (var lines in kvpList.Split(",",System.StringSplitOptions.RemoveEmptyEntries))
+            int endIndex = json.LastIndexOf("}})");
+            string jsonKvp = json.Substring(startIndex, endIndex - startIndex);
+
+            foreach (var lines in jsonKvp.Split(",", System.StringSplitOptions.RemoveEmptyEntries))
             {
-                var kvp = lines.Split(":");
-                mapFunctionQuery.Append(CreateKeyValueJson(kvp[0].Replace("\"", ""),kvp[1].Replace("\"", "")));
+                var kvp = lines.Split(" : ");
+                mapFunctionQuery.Append(CreateKeyValueJson(kvp[0], kvp[1]));
             }
-            
-            mapFunctionQuery = new StringBuilder(json.Replace(kvpList, mapFunctionQuery.ToString()));
+            mapFunctionQuery.Replace("\"\"", "\"");
+            mapFunctionQuery = new StringBuilder(json.Replace(jsonKvp, mapFunctionQuery.ToString()));
             return mapFunctionQuery.ToString();
         }
 

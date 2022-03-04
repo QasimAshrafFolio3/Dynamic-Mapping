@@ -69,7 +69,7 @@ namespace DynamicMappingCore.Controllers
             List<JsonModel> jsonModelList = new List<JsonModel>();
             foreach (var item in InMemJsonModeDb)
                 jsonModelList.Add(new JsonModel { URL = item.Key, ConnectionType = item.Value.ConnectionType, Json = item.Value.Json });
-            
+
             return View(jsonModelList);
         }
 
@@ -85,14 +85,14 @@ namespace DynamicMappingCore.Controllers
 
                 // Convert url to Title
                 tempJsonMapModel.Title = item.Key.Substring(item.Key.LastIndexOf('/') + 1);
-                
+
                 List<FieldsAndType> fieldsAndTypesList = new List<FieldsAndType>();
-                
+
                 // Parse json and extract Info
                 var jsonModel = item.Value;
                 tempJsonMapModel.ConnectionType = jsonModel.ConnectionType;
                 JObject jObj = JObject.Parse(IsArray(jsonModel.Json) ? JArray.Parse(jsonModel.Json).FirstOrDefault().ToString() : jsonModel.Json);
-                
+
                 //Conver json to Flattener Model
                 var jsonCustomFormatter = new ComAxJsonFlattener().CollectFields(JToken.Parse(jObj.ToString()), false, true);
 
@@ -127,9 +127,12 @@ namespace DynamicMappingCore.Controllers
             JsonMetaDataList.ForEach(x => { dictObjectList.TryAdd(x.Target, x.Expression != null ? x.Expression : x.Source); });
 
             var outputJoBject = dictObjectList.Unflatten();
-            currentUnflattenJsonAta = new JsonataEngine().CreateJsonAtaQuery(outputJoBject);
+            if (outputJoBject != null)
+            {
+                currentUnflattenJsonAta = new JsonataEngine().CreateJsonAtaQuery(outputJoBject);
+                InMemJsonMetaDataDb.Add(jsonataQuery.Trim(), JsonMetaDataList);
+            }
 
-            InMemJsonMetaDataDb.Add(jsonataQuery.Trim(), JsonMetaDataList);
             return RedirectToAction("ResultJson");
         }
 
@@ -156,9 +159,13 @@ namespace DynamicMappingCore.Controllers
             ViewBag.JsonAtaQuery = currentJsonAtaQuery;
             ViewBag.UnflattenJsonAta = currentUnflattenJsonAta;
 
-            JsonataQuery jsonataQuery = new JsonataQuery(currentUnflattenJsonAta);
+            if (currentUnflattenJsonAta != null)
+            {
+                JsonataQuery jsonataQuery = new JsonataQuery(currentUnflattenJsonAta);
             result = jsonataQuery.Eval(source.Json.ToString());
             ViewBag.Result = result;
+            }
+            
 
             return View();
         }
