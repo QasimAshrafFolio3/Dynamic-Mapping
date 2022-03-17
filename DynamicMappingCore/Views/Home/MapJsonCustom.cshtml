@@ -1,10 +1,10 @@
 ﻿@model IEnumerable<DynamicMappingCore.Models.JsonMapModel>
 
 @{
-    ViewData["Title"] = "Map Json Custom";
+    ViewData["Title"] = "Map Json Fields";
 }
 
-<h1>Map Json Custom</h1>
+<h1>Map Json Fields</h1>
 
 @*<input type="button" id="btnSaveCustom" value="Save & Convert [Custom]" class="btn btn-primary" />*@
 <div class="row">
@@ -16,7 +16,7 @@
                         <th>Component Type</th>
                         <th>Destination</th>
                         <th>Source</th>
-                        <th>Action</th>
+                        <th >Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -27,8 +27,10 @@
 </div>
 
 <input type="button" id="btnAdd" value="Add" class="btn btn-primary" onclick="addRow()" />
-<input type="button" id="btnSaveJsonAta" value="Save & Convert [JsonAta]" class="btn btn-primary" />
 <input type="button" id="btnLockAllRow" value="Lock All Rows" class="btn btn-primary" />
+<input type="button" id="btnSaveJsonAta" value="Save & Convert" class="btn btn-primary" />
+
+<hr />
 
 <p>Json ata Query</p>
 
@@ -165,10 +167,10 @@
     function addRow() {
         rowNumber++;
         var row = '<tr id="row' + rowNumber + '" class="simpleRow">' +
-            '<td class="col-2" id="column1" ><select class="form-control" id="component' + rowNumber + '" onchange="componentChange(this,' + rowNumber + ')"></td>' +
-            '<td class="col-4" id="column2" ><select class="form-control" id="target' + rowNumber + '" ></select></td>' +
-            '<td class="col-4" id="column3" ><select class="form-control" id="source' + rowNumber + '" ></select><input type="text" id="expression' + rowNumber + '" style="display:none;width:100%"/></td>' +
-            '<td class="col-2" id="column4" ><input type="checkbox" id="row' + rowNumber + '" onclick="lockRow(this,' + rowNumber + ')" name="Lock"/>  <label for="Lock">Lock</label></td>' +
+            '<td class="col-md-2" id="column1" ><select class="form-control" id="component' + rowNumber + '" onchange="componentChange(this,' + rowNumber + ')"></td>' +
+            '<td class="col-md-4" id="column2" ><select class="form-control" id="target' + rowNumber + '" ></select></td>' +
+            '<td class="col-md-4" id="column3" ><select class="form-control" id="source' + rowNumber + '" ></select><input type="text" id="expression' + rowNumber + '" style="display:none;width:100%"/></td>' +
+            '<td class="col-md-1" id="column4"  ><input type="checkbox" id="row' + rowNumber + '" onclick="lockRow(this,' + rowNumber + ')" name="Lock" />  <label for="Lock">Lock</label></td>' +
             '</tr>';
 
         $('#mainTable').append(row);

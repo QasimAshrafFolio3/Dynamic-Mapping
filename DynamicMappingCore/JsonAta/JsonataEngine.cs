@@ -23,7 +23,7 @@ namespace DynamicMappingCore.JsonAta
                     //Check for loop
                     if (jToken.Value.ToString().Contains("$map"))
                         tempValue = MapFunctionQuery(jToken.Value.ToString());
-                    else if (TernaryOperatorRegex.IsMatch(jToken.Value.ToString()))
+                    else if (TernaryOperatorRegex.IsMatch(jToken.Value.ToString()) || jToken.Value.ToString().Contains("="))
                         tempValue = jToken.Value.ToString();
                     else
                         tempValue = jToken.Value.ToString().Replace("\"", "").Replace("::", "\"");
