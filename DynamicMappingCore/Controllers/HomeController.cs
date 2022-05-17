@@ -3,11 +3,9 @@ using DynamicMappingCore.Models;
 using Jsonata.Net.Native;
 using JsonFlatten;
 using JsonFlattener;
-using JUST;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -100,7 +98,7 @@ namespace DynamicMappingCore.Controllers
                 {
                     // cleaning simple flatten pattern 
                     string cleanFieldName = Regex.Replace(fields.Name, @"[[0-9]+]", "");
-
+                
                     if (!fieldsAndTypesList.Any(x => x.Field == cleanFieldName))
                     {
                         fieldsAndTypesList.Add(new FieldsAndType()
@@ -123,12 +121,14 @@ namespace DynamicMappingCore.Controllers
 
             currentJsonAtaQuery = jsonataQuery;
 
+            // Convert model to dictionary so we can Unflatten the json.
             Dictionary<string, object> dictObjectList = new Dictionary<string, object>();
             JsonMetaDataList.ForEach(x => { dictObjectList.TryAdd(x.Target, x.Expression != null ? x.Expression : x.Source); });
 
             var outputJoBject = dictObjectList.Unflatten();
             if (outputJoBject != null)
             {
+                //Convert Dictionary to proper json ata query
                 currentUnflattenJsonAta = new JsonataEngine().CreateJsonAtaQuery(outputJoBject);
                 InMemJsonMetaDataDb.Add(jsonataQuery.Trim(), JsonMetaDataList);
             }

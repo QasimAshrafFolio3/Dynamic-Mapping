@@ -16,6 +16,7 @@ namespace DynamicMappingCore.JsonAta
             {
                 string tempValue = string.Empty;
 
+                // Lookup for nested objects
                 if (jToken.Value.Type == JTokenType.Object)
                     tempValue = CreateJsonAtaQuery(JObject.Parse(jToken.Value.ToString()));
                 else
@@ -31,8 +32,6 @@ namespace DynamicMappingCore.JsonAta
 
                 jsonataQuery.Append(CreateKeyValueJson(jToken.Key, tempValue));
             }
-
-
 
             //Post Processing
             jsonataQuery = new StringBuilder("{" + jsonataQuery + "}");

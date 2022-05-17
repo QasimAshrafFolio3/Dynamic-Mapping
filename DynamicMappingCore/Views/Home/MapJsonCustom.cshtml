@@ -16,7 +16,7 @@
                         <th>Component Type</th>
                         <th>Destination</th>
                         <th>Source</th>
-                        <th >Action</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -231,7 +231,8 @@
             let concatenateQuery = GenerateConcatenateQuery(sourceDropDown);
             jsonataQuery += '"' + targetDropDown.val() + '":' + concatenateQuery + ',';
             jsonMetaData.source = concatenateQuery;
-        } else {
+        }
+        else {
             jsonataQuery += '"' + targetDropDown.val() + '":' + sourceDropDown.val() + ',';
             jsonMetaData.source = sourceDropDown.val();
         }
@@ -316,13 +317,14 @@
         return conditionPart + " ? " + _truePart + " : " + _falsePart;
     }
 
+    // Whenever Component Drop Down Index Changes.
     function componentChange(element, rowNumber) {
 
         // Get Component details
         var componentDropDown = $('#component' + rowNumber + ' :selected');
 
-        //Reset setting on componenet drop down change
-        $('#source' + rowNumber).select2({tags:false,multiple:false}).val(null).trigger('changes');
+        //Reset setting on component drop down change
+        $('#source' + rowNumber).select2( { tags:false, multiple:false} ).val(null).trigger('changes');
         $('#target' + rowNumber).select2().val(null).trigger('changes');
 
         var sourceDropDownOptions = $('#source' + rowNumber + ' > option');
@@ -336,28 +338,42 @@
         disableArrayObjectOption(sourceDropDownOptions);
 
         //Render complete row
-        if (componentDropDown.val() == 'mapping-Table') {
+        if (componentDropDown.val() == 'mapping-Table')
+        {
+            // Add mapping Table below current row.
             addMappingTable(rowNumber);
-        } else if (componentDropDown.val() == "jsonata-expression") {
+        }
+        else if (componentDropDown.val() == "jsonata-expression")
+        {
             showExpressionArea(rowNumber);
-        } else if (componentDropDown.val() == 'custom-field') {
-            $('#target' + rowNumber).select2({tags:true,tokenSeparators: [',', ' ']});
-            //disable all target fields name
+        }
+        else if (componentDropDown.val() == 'custom-field') {
+
+            $('#target' + rowNumber).select2({ tags:true, tokenSeparators: [',', ' ']});
+
+            //Disable all target fields name
             targetDropDownOptions.each(function() {
                 $(this).prop('disabled', function(_, disabled) {
                     return true;
                 });
             });
-        } else if (componentDropDown.val() == "concatenate") {
-            // Handling Source DropDown
-            $('#source' + rowNumber).select2({tags:true,multiple:true,tokenSeparators: [',', ' ']});
-        } else if (componentDropDown.val() == "foreach"){
+
+        }
+        else if (componentDropDown.val() == "concatenate")
+        {
+            // Allow Multiple Tags
+            $('#source' + rowNumber).select2( { tags:true, multiple:true, tokenSeparators: [',', ' ']});
+
+        }
+        else if (componentDropDown.val() == "foreach")
+        {
             enableArrayObjectOption(targetDropDownOptions);
             enableArrayObjectOption(sourceDropDownOptions);
             addLoopingTable(rowNumber);
         }
     }
 
+    // Disable Array Items from DropDown
     function disableArrayObjectOption(dropdown)
     {
         //disable all object and array fields if any
@@ -374,6 +390,7 @@
             });
     }
 
+    //Enable Array Items from DropDown
     function enableArrayObjectOption(dropdown)
     {
         //enable all object and array fields if any
@@ -437,7 +454,8 @@
             let loopingTableRow =
                 '<tr id="loopingRow' + rowNumber + '">' +
                 '<td colspan="4">' +
-                '<div class="row"><div class="col-md-1"><input type="button" id="btnAddFields' + rowNumber + '" value=" + " class="btn btn-primary" onclick="addLoopingRow(this,' + rowNumber + ')" />' +
+                '<div class="row"><div class="col-md-1"><input type="button" id="btnAddFields' + rowNumber + '" value=" + " class="btn btn-primary" onclick="addLoopingRows(this,' + rowNumber + ')" />' +
+                @*'<div class="row"><div class="col-md-1"><input type="button" id="btnAddFields' + rowNumber + '" value=" + " class="btn btn-primary" onclick="addLoopingRow(this,' + rowNumber + ')" />' +*@
                 '</div><div class="col-md-11"><div class="table-responsive">' +
                 '<table class="table" id="loopingTable' + rowNumber + '">' +
                 '<thead><tr><th>Destination</th><th>Source</th><th>Action</th></tr></thead>' +
@@ -471,6 +489,25 @@
     function addLoopingRow(element, rowNumber) {
         $('#loopingTable' + rowNumber).append('<tr><td><input type="text"/></td><td><input type="text"/></td><td><input type="button" id="btnRemoveMapping' + rowNumber + '" value="Remove Mapping" class="btn btn-danger" onclick="deleteRow(this,' + rowNumber + ')" /></td></tr>');
     }
+
+     // Add new row in looping table for mapping component.
+    function addLoopingRows(element, rowNumber) {
+        //Target Drop Down
+        var targetDropDownSelectedArray = $('#target' + rowNumber + ' > option:selected');
+        console.log(targetDropDownSelectedArray.val());
+        var targetDropDownArrayItems = $('#target' + rowNumber + ' > option:contains(' + targetDropDownSelectedArray.val() + ')');
+        console.log(targetDropDownArrayItems);
+
+        for(var index=0;index < targetDropDownArrayItems.length ; index++)
+        {
+            var tempValue = targetDropDownArrayItems[index].value;
+            //To Do
+            // Cleaning
+            $('#loopingTable' + rowNumber).append('<tr><td><input type="text" value='+tempValue+'></td><td><input type="text" /></td><td><input type="button" id="btnRemoveMapping' + rowNumber + '" value="Remove Mapping" class="btn btn-danger" onclick="deleteRow(this,' + rowNumber + ')" /></td></tr>');
+        }
+    }
+
+
 
     function deleteRow(element, rowNumber) {
            $(element).closest("tr").remove();
