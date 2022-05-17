@@ -5,6 +5,7 @@ using JsonFlatten;
 using JsonFlattener;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -96,9 +97,9 @@ namespace DynamicMappingCore.Controllers
 
                 foreach (var fields in jsonCustomFormatter)
                 {
-                    // cleaning simple flatten pattern 
+                    // cleaning simple flatten pattern like removing array brackets. etc.
                     string cleanFieldName = Regex.Replace(fields.Name, @"[[0-9]+]", "");
-                
+
                     if (!fieldsAndTypesList.Any(x => x.Field == cleanFieldName))
                     {
                         fieldsAndTypesList.Add(new FieldsAndType()
@@ -123,13 +124,21 @@ namespace DynamicMappingCore.Controllers
 
             // Convert model to dictionary so we can Unflatten the json.
             Dictionary<string, object> dictObjectList = new Dictionary<string, object>();
-            JsonMetaDataList.ForEach(x => { dictObjectList.TryAdd(x.Target, x.Expression != null ? x.Expression : x.Source); });
+            List<string> arrayForConversion = new List<string>();
+
+            JsonMetaDataList.ForEach(x =>
+            {
+                if (x.ComponentType != "Array")
+                    dictObjectList.TryAdd(x.Target, x.Expression != null ? x.Expression : x.Source);
+                else
+                    arrayForConversion.Add(x.Target.Split(".").LastOrDefault());
+            });
 
             var outputJoBject = dictObjectList.Unflatten();
             if (outputJoBject != null)
             {
                 //Convert Dictionary to proper json ata query
-                currentUnflattenJsonAta = new JsonataEngine().CreateJsonAtaQuery(outputJoBject);
+                currentUnflattenJsonAta = new JsonataEngine().CreateJsonAtaQuery(outputJoBject, arrayForConversion);
                 InMemJsonMetaDataDb.Add(jsonataQuery.Trim(), JsonMetaDataList);
             }
 
@@ -162,10 +171,10 @@ namespace DynamicMappingCore.Controllers
             if (currentUnflattenJsonAta != null)
             {
                 JsonataQuery jsonataQuery = new JsonataQuery(currentUnflattenJsonAta);
-            result = jsonataQuery.Eval(source.Json.ToString());
-            ViewBag.Result = result;
+                result = jsonataQuery.Eval(source.Json.ToString());
+                ViewBag.Result = result;
             }
-            
+
 
             return View();
         }

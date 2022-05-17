@@ -9,7 +9,7 @@ namespace DynamicMappingCore.JsonAta
     {
         public static Regex TernaryOperatorRegex = new Regex(@"{*}*?{*}*:{*}*");
 
-        public string CreateJsonAtaQuery(JObject jObject)
+        public string CreateJsonAtaQuery(JObject jObject, List<string> arrays)
         {
             StringBuilder jsonataQuery = new StringBuilder();
             foreach (KeyValuePair<string, JToken> jToken in jObject)
@@ -18,7 +18,13 @@ namespace DynamicMappingCore.JsonAta
 
                 // Lookup for nested objects
                 if (jToken.Value.Type == JTokenType.Object)
-                    tempValue = CreateJsonAtaQuery(JObject.Parse(jToken.Value.ToString()));
+                {
+                    tempValue = CreateJsonAtaQuery(JObject.Parse(jToken.Value.ToString()), arrays);
+
+                    if (arrays.Contains(jToken.Key))
+                        tempValue = "[$" + tempValue + "]";
+
+                }
                 else
                 {
                     //Check for loop

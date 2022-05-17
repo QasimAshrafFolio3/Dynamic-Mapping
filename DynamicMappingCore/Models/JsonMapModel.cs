@@ -2,6 +2,7 @@
 
 namespace DynamicMappingCore.Models
 {
+    // Used for UI/View Purpose 
     public class JsonMapModel
     {
         public string Title { get; set; }
@@ -11,8 +12,9 @@ namespace DynamicMappingCore.Models
         {
             FieldsAndType = new List<FieldsAndType>();
         }
-
     }
+
+    // Used for DropDown Purpose 
     public class FieldsAndType
     {
         public string Field { get; set; }

@@ -75,7 +75,23 @@
         });
 
         $("#btnLockAllRow").click(function() {
+
+            //Reset Existing Query & target Arrays.
+            jsonataQuery = "";
+
+            //Click Each 
             $("#mainTable tbody tr input:checkbox").each(function(){ $(this).prop('checked', true); $(this).trigger('onclick'); });
+
+            // Add Arrays for Conversion
+            targetArrays.forEach(x=>{
+                var jsonMetaData = {
+                    target : x.field,
+                    componentType : "Array",
+                    source : "",
+                    expression : null
+                };
+                jsonMetaDataList.push(jsonMetaData)
+            });
         });
     });
 
@@ -87,6 +103,11 @@
             .done(function(response, status, jqxhr) {
                 if (response.length > 0) {
                     response[0].forEach(function(element, index) {
+
+                        // Skip Array Which is used for conversion purpose.
+                        if(element.componentType=="Array")
+                            return;
+
                         let row = addRow();
                         $('#component' + row).val(element.componentType);
                         if (element.componentType == "mapping-Table") {
@@ -163,6 +184,8 @@
         });
     }
 
+    var targetArrays = [];
+
     // add new row in main table.
     function addRow() {
         rowNumber++;
@@ -175,7 +198,7 @@
 
         $('#mainTable').append(row);
 
-        //Compnent Drop Down
+        //Component Drop Down
         var components = $('#component' + rowNumber).select2();
         for (let index in componentsList) {
             components.append('<option value=' + componentsList[index] + '>' + componentsList[index] + '</option>');
@@ -189,6 +212,12 @@
         for (let index in targetKVP) {
             target.append('<option value=' + targetKVP[index].field + ' :: ' + targetKVP[index].type + '>' + targetKVP[index].field + ' :: ' + targetKVP[index].type + '</option>');
         }
+
+        // Array in Target Fields
+        targetKVP.forEach(function(item){
+            if(item.type == "Array" && targetArrays.filter(x=>x.field==item.field).length==0)
+                targetArrays.push(item);
+        });
 
         //Source binding
         var sourceKVP = @Json.Serialize(Model.FirstOrDefault().FieldsAndType);
