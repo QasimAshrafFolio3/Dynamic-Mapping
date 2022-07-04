@@ -11,11 +11,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DynamicMappingCore", "Dynam
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DynamicMappingJustNet", "DynamicMappingJustNet\DynamicMappingJustNet.csproj", "{B4CD5C6C-2444-45B2-8E99-219B66D5FA04}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicMappingCustom", "DynamicMappingCustom\DynamicMappingCustom.csproj", "{9D6B14D5-38DC-4C40-9FE6-F70358263A40}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DynamicMappingCustom", "DynamicMappingCustom\DynamicMappingCustom.csproj", "{9D6B14D5-38DC-4C40-9FE6-F70358263A40}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonFlattenTest", "CustomJsonFlatten\JsonFlattenTest.csproj", "{A1937D6D-780E-4960-B71D-95BC8250132F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonFlattenTest", "CustomJsonFlatten\JsonFlattenTest.csproj", "{A1937D6D-780E-4960-B71D-95BC8250132F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonFlattener", "JsonFlattener\JsonFlattener.csproj", "{FD656E6C-C6C7-4C8E-9474-E81EA30EFB27}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonFlattener", "JsonFlattener\JsonFlattener.csproj", "{FD656E6C-C6C7-4C8E-9474-E81EA30EFB27}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "JsonFlatten", "JsonFlatten", "{6C812D91-3211-424B-9F25-FE3737E20EF0}"
 EndProject

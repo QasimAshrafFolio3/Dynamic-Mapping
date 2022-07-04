@@ -1,4 +1,5 @@
-﻿using DynamicMappingCore.JsonAta;
+﻿using DynamicMappingCore.Db;
+using DynamicMappingCore.JsonAta;
 using DynamicMappingCore.Models;
 using Jsonata.Net.Native;
 using JsonFlatten;
@@ -17,9 +18,6 @@ namespace DynamicMappingCore.Controllers
     {
         private readonly ILogger<HomeController> _logger;
 
-        public static Dictionary<string, JsonModel> InMemJsonModeDb = new Dictionary<string, JsonModel>();
-        public static Dictionary<string, List<JsonMetaData>> InMemJsonMetaDataDb = new Dictionary<string, List<JsonMetaData>>();
-
         public static string result;
         public static string currentUnflattenJsonAta;
         public static string currentJsonAtaQuery;
@@ -36,7 +34,7 @@ namespace DynamicMappingCore.Controllers
         [HttpGet]
         public JsonResult GetJsonMetaData()
         {
-            return Json(InMemJsonMetaDataDb.Where(x => !string.IsNullOrWhiteSpace(x.Key)).Select(x => x.Value));
+            return Json(Database.InMemJsonMetaDataDb.Where(x => !string.IsNullOrWhiteSpace(x.Key)).Select(x => x.Value));
         }
 
         public IActionResult Privacy()
@@ -58,14 +56,14 @@ namespace DynamicMappingCore.Controllers
         [HttpPost]
         public IActionResult SaveJson(JsonModel jsonModel)
         {
-            InMemJsonModeDb.TryAdd(jsonModel.URL, jsonModel);
+            Database.InMemJsonModeDb.TryAdd(jsonModel.URL, jsonModel);
             return RedirectToAction("ShowJson");
         }
 
         public IActionResult ShowJson()
         {
             List<JsonModel> jsonModelList = new List<JsonModel>();
-            foreach (var item in InMemJsonModeDb)
+            foreach (var item in Database.InMemJsonModeDb)
                 jsonModelList.Add(new JsonModel { URL = item.Key, ConnectionType = item.Value.ConnectionType, Json = item.Value.Json });
 
             return View(jsonModelList);
@@ -77,7 +75,7 @@ namespace DynamicMappingCore.Controllers
             List<JsonMapModel> jsonMapModelList = new List<JsonMapModel>();
 
             //Fetch all json from 
-            foreach (var item in InMemJsonModeDb)
+            foreach (var item in Database.InMemJsonModeDb)
             {
                 JsonMapModel tempJsonMapModel = new JsonMapModel();
 
@@ -117,28 +115,19 @@ namespace DynamicMappingCore.Controllers
         [HttpPost]
         public IActionResult SaveMappingJsonAtaWithQuery(List<JsonMetaData> JsonMetaDataList, string jsonataQuery)
         {
-            InMemJsonMetaDataDb.Clear();
+            Database.InMemJsonMetaDataDb.Clear();
 
             currentJsonAtaQuery = jsonataQuery;
 
-            // Convert model to dictionary so we can Unflatten the json.
-            Dictionary<string, object> dictObjectList = new Dictionary<string, object>();
-            List<string> arrayForConversion = new List<string>();
+            JsonAtaConverter jsonAtaConverter = new JsonAtaConverter();
+            var outputJoBject = jsonAtaConverter.ConvertToDictionary(JsonMetaDataList).Unflatten();
+            var arrayForConversion = jsonAtaConverter.ArrayFields;
 
-            JsonMetaDataList.ForEach(x =>
-            {
-                if (x.ComponentType != "Array")
-                    dictObjectList.TryAdd(x.Target, x.Expression != null ? x.Expression : x.Source);
-                else
-                    arrayForConversion.Add(x.Target.Split(".").LastOrDefault());
-            });
-
-            var outputJoBject = dictObjectList.Unflatten();
             if (outputJoBject != null)
             {
                 //Convert Dictionary to proper json ata query
                 currentUnflattenJsonAta = new JsonataTransformerQueryBuilder(arrayForConversion).BuildQuery(outputJoBject);
-                InMemJsonMetaDataDb.Add(jsonataQuery.Trim(), JsonMetaDataList);
+                Database.InMemJsonMetaDataDb.Add(jsonataQuery.Trim(), JsonMetaDataList);
             }
 
             return RedirectToAction("ResultJson");
@@ -159,7 +148,7 @@ namespace DynamicMappingCore.Controllers
 
         public IActionResult ResultJson()
         {
-            var source = InMemJsonModeDb.Where(x => x.Value.ConnectionType == ConnectionType.source).FirstOrDefault().Value;
+            var source = Database.InMemJsonModeDb.Where(x => x.Value.ConnectionType == ConnectionType.source).FirstOrDefault().Value;
             ViewBag.Source = source.Json;
 
             ViewBag.JsonAtaQuery = currentJsonAtaQuery;
