@@ -5,11 +5,18 @@ using System.Text.RegularExpressions;
 
 namespace DynamicMappingCore.JsonAta
 {
-    public class JsonataEngine
+    public class JsonataTransformerQueryBuilder
     {
         public static Regex TernaryOperatorRegex = new Regex(@"{*}*?{*}*:{*}*");
+        private static string kvpFormat = "\"{0}\":{1},";
 
-        public string CreateJsonAtaQuery(JObject jObject, List<string> arrays)
+        private List<string> ArraysForConversion = new List<string>();
+        public JsonataTransformerQueryBuilder(List<string> arraysForConversion)
+        {
+            ArraysForConversion = arraysForConversion;
+        }
+
+        public string BuildQuery(JObject jObject)
         {
             StringBuilder jsonataQuery = new StringBuilder();
             foreach (KeyValuePair<string, JToken> jToken in jObject)
@@ -19,11 +26,10 @@ namespace DynamicMappingCore.JsonAta
                 // Lookup for nested objects
                 if (jToken.Value.Type == JTokenType.Object)
                 {
-                    tempValue = CreateJsonAtaQuery(JObject.Parse(jToken.Value.ToString()), arrays);
+                    tempValue = BuildQuery(JObject.Parse(jToken.Value.ToString()));
 
-                    if (arrays.Contains(jToken.Key))
-                        tempValue = "[$" + tempValue + "]";
-
+                    if (ArraysForConversion.Contains(jToken.Key))
+                        tempValue = $"[${tempValue}]";
                 }
                 else
                 {
@@ -48,6 +54,7 @@ namespace DynamicMappingCore.JsonAta
             return jsonataQuery.ToString();
         }
 
+
         private string MapFunctionQuery(string json)
         {
             StringBuilder mapFunctionQuery = new StringBuilder();
@@ -61,12 +68,16 @@ namespace DynamicMappingCore.JsonAta
                 var kvp = lines.Split(" : ");
                 mapFunctionQuery.Append(CreateKeyValueJson(kvp[0], kvp[1]));
             }
+
+            //Cleaning 
             mapFunctionQuery.Replace("\"\"", "\"");
+            
+            // Convert jsonata Double Bracket to Single Bracket
             mapFunctionQuery = new StringBuilder(json.Replace(jsonKvp, mapFunctionQuery.ToString()));
             return mapFunctionQuery.ToString();
         }
 
-        private static string kvpFormat = "\"{0}\":{1},";
+        
         private string CreateKeyValueJson(string Key, string value)
         {
             return string.Format(kvpFormat, Key, value);

@@ -5,7 +5,6 @@ using JsonFlatten;
 using JsonFlattener;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -138,13 +137,12 @@ namespace DynamicMappingCore.Controllers
             if (outputJoBject != null)
             {
                 //Convert Dictionary to proper json ata query
-                currentUnflattenJsonAta = new JsonataEngine().CreateJsonAtaQuery(outputJoBject, arrayForConversion);
+                currentUnflattenJsonAta = new JsonataTransformerQueryBuilder(arrayForConversion).BuildQuery(outputJoBject);
                 InMemJsonMetaDataDb.Add(jsonataQuery.Trim(), JsonMetaDataList);
             }
 
             return RedirectToAction("ResultJson");
         }
-
 
         private bool IsArray(string source)
         {
@@ -158,7 +156,6 @@ namespace DynamicMappingCore.Controllers
                 return false;
             };
         }
-
 
         public IActionResult ResultJson()
         {
@@ -174,8 +171,6 @@ namespace DynamicMappingCore.Controllers
                 result = jsonataQuery.Eval(source.Json.ToString());
                 ViewBag.Result = result;
             }
-
-
             return View();
         }
     }
